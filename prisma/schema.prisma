@@ -7,7 +7,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model testing {
-  id   String  @id @db.Uuid
-  text String?
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+model user {
+  id              Int       @id @default(autoincrement())
+  name            String
+  password        String
+  phone           String
+  role            Role?     @default(USER)
+  email           String?
+  createdAt       DateTime? @default(now())
+  updatedAt       DateTime? @updatedAt
+  active          Status?   @default(ACTIVE)
+  products        product[] @relation("createdByUser")
+  productsUpdated product[] @relation("updatedByUser")
+}
+
+model product {
+  id            String    @id @db.Uuid
+  name          String
+  barCode       String
+  price         Float?
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime? @updatedAt
+  active        Status    @default(ACTIVE)
+  createdBy     Int
+  updatedBy     Int
+  createdByUser user?     @relation("createdByUser", fields: [createdBy], references: [id])
+  updatedByUser user?     @relation("updatedByUser", fields: [updatedBy], references: [id])
+
+  @@index([barCode])
 }
