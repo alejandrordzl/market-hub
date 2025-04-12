@@ -17,11 +17,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     // Find the user by ID
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(id, 10) },
+      where: { id: parseInt(id) },
     });
 
     if (!user || user.active !== 'ACTIVE') {
-      return res.status(401).json({ error: 'Invalid user ID or password' });
+      return res.status(401).json({ error: 'Cannot find user ID' });
     }
 
     // Compare the provided password with the hashed password
@@ -35,7 +35,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET!, // Ensure JWT_SECRET is set in your .env file
-      { expiresIn: '1h' } // Token expires in 1 hour
+      { expiresIn: '12h' } // Token expires in 12 hours
     );
 
     return res.status(200).json({ token });

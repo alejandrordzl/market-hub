@@ -1,70 +1,87 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/utils/prisma'; // Adjust path if needed
-import authenticate from '../../../lib/middleware';
-import { CreateProductBody, User } from '@/utils/types';
+import authenticate from '@/lib/middleware';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = (req as any).user as User; // User object from middleware
+  const { id } = req.query;
+
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing product ID' });
+  }
 
   switch (req.method) {
     case 'GET': {
-      // Get products by pagination
-      const { page = 1, limit = 10 } = req.query;
-
-      const pageNumber = parseInt(page as string, 10);
-      const pageSize = parseInt(limit as string, 10);
-
-      if (isNaN(pageNumber) || isNaN(pageSize) || pageNumber < 1 || pageSize < 1) {
-        return res.status(400).json({ error: 'Invalid pagination parameters' });
-      }
-
+      // Get a product by ID
       try {
-        const products = await prisma.product.findMany({
-          skip: (pageNumber - 1) * pageSize,
-          take: pageSize,
-          where: { active: 'ACTIVE' },
-          orderBy: { createdAt: 'desc' },
+        const product = await prisma.product.findUnique({
+          where: { id },
         });
 
-        const totalProducts = await prisma.product.count({
-          where: { active: 'ACTIVE' },
-        });
+        if (!product) {
+          return res.status(404).json({ error: 'Product not found' });
+        }
 
-        return res.status(200).json({
-          data: products,
-          meta: {
-            total: totalProducts,
-            page: pageNumber,
-            limit: pageSize,
-            totalPages: Math.ceil(totalProducts / pageSize),
-          },
-        });
+        return res.status(200).json(product);
       } catch (error) {
         console.error(error);
         return res.status(500).json({ error: 'Internal server error' });
       }
     }
 
-    case 'POST': {
-      // Create a new product
-      const { name, barCode, price } = req.body as CreateProductBody;
+    case 'PUT': {
+      // Update a product by ID
+      const { name, barCode, price } = req.body;
 
-      if (!name || !barCode || price === undefined) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      if (!name && !barCode && price === undefined) {
+        return res.status(400).json({ error: 'Missing fields to update' });
       }
 
       try {
-        const newProduct = await prisma.product.create({
+        const updatedProduct = await prisma.product.update({
+          where: { id },
           data: {
-            name,
-            barCode,
-            price,
-            createdBy: user.id,
-            updatedBy: user.id,
+            ...(name && { name }),
+            ...(barCode && { barCode }),
+            ...(price !== undefined && { price }),
+            updatedBy: (req as any).user.id, // Use the authenticated user's ID
+            updatedAt: new Date()
           },
         });
 
-        return res.status(201).json(newProduct);
+        return res.status(200).json(updatedProduct);
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+
+    case 'DELETE': {
+      // Soft delete a product by setting its active status to INACTIVE
+      try {
+        const user = (req as any).user; // User object from the authentication middleware
+
+        if (!user || user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const product = await prisma.product.findUnique({
+          where: { id },
+        });
+
+        if (!product) {
+          return res.status(404).json({ error: 'Product not found' });
+        }
+
+        const updatedProduct = await prisma.product.update({
+          where: { id },
+          data: {
+            active: 'INACTIVE',
+            updatedBy: user.id, // Use the authenticated user's ID
+            updatedAt: new Date(), // Automatically update the timestamp
+          },
+        });
+
+        return res.status(200).json({ message: 'Product deleted successfully', product: updatedProduct });
       } catch (error) {
         console.error(error);
         return res.status(500).json({ error: 'Internal server error' });

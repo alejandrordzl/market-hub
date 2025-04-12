@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/utils/prisma'; // Adjust path if needed
-import authenticate from '../../../lib/middleware';
+import authenticate from '@/lib/middleware';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const user = (req as any).user; // User object from middleware
