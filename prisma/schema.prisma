@@ -82,10 +82,10 @@ model sale {
 
 model saleItem {
   id         String   @id @db.Uuid @default(uuid())
-  saleId     String
+  saleId     String   @db.Uuid
   sale       sale     @relation(fields: [saleId], references: [id])
   
-  productId  String
+  productId  String   @db.Uuid
   product    product  @relation(fields: [productId], references: [id])
   
   quantity   Int      // Quantity of this product in the sale
