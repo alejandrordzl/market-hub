@@ -18,6 +18,17 @@ enum Status {
   INACTIVE
 }
 
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+}
+
+enum SaleStatus {
+  PENDING
+  CONCLUDED
+  CANCELLED
+}
+
 model user {
   id              Int       @id @default(autoincrement())
   name            String
@@ -30,10 +41,13 @@ model user {
   active          Status?   @default(ACTIVE)
   products        product[] @relation("createdByUser")
   productsUpdated product[] @relation("updatedByUser")
+  
+  // Sales made by the user (as the seller)
+  sales           sale[]    @relation("sellerSales")
 }
 
 model product {
-  id            String    @id @db.Uuid
+  id            String    @id @db.Uuid @default(uuid())
   name          String
   barCode       String
   price         Float?
@@ -44,6 +58,36 @@ model product {
   updatedBy     Int
   createdByUser user?     @relation("createdByUser", fields: [createdBy], references: [id])
   updatedByUser user?     @relation("updatedByUser", fields: [updatedBy], references: [id])
-
+  sales        saleItem[]
+  // Index for searching products by bar code
   @@index([barCode])
+}
+
+model sale {
+  id             String      @id @db.Uuid @default(uuid())
+  // The seller who made the sale
+  sellerId       Int
+  seller         user        @relation("sellerSales", fields: [sellerId], references: [id])
+  
+  paymentMethod  PaymentMethod
+  total          Float       // Total of the sale
+  amountReceived Float       // Amount received from the customer
+  change         Float       // Change to give back to the customer
+  saleDate       DateTime    @default(now()) // Date and time of the sale
+  status         SaleStatus  @default(PENDING)
+  
+  // List of products included in this sale
+  saleItems      saleItem[]
+}
+
+model saleItem {
+  id         String   @id @db.Uuid @default(uuid())
+  saleId     String
+  sale       sale     @relation(fields: [saleId], references: [id])
+  
+  productId  String
+  product    product  @relation(fields: [productId], references: [id])
+  
+  quantity   Int      // Quantity of this product in the sale
+  unitPrice  Float?   // Price per unit at the time of sale
 }
