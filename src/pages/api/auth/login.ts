@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '@/utils/prisma'; // Adjust path if needed
+import { UserToken } from '@/utils/types';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
@@ -30,10 +31,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid user ID or password' });
     }
-
+    const userToken: UserToken = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    }
     // Generate a JWT
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      userToken,
       process.env.JWT_SECRET!, // Ensure JWT_SECRET is set in your .env file
       { expiresIn: '12h' } // Token expires in 12 hours
     );

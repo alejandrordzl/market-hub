@@ -1,10 +1,11 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import prisma from '@/utils/prisma'; // Adjust path if needed
 import authenticate from '@/lib/middleware'; // Adjust path if needed
+import { AuthenticatedRequest } from '@/utils/types';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = (req as any).user; // User object from middleware
+const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
+  const user = req.user; // User object from middleware
 
   if (req.method === 'POST') {
     // Ensure only authenticated users with the correct roles can access this endpoint

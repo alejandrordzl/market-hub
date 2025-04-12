@@ -1,9 +1,11 @@
-import { NextApiRequest, NextApiResponse, NextApiHandler } from 'next';
+import { NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import prisma from '@/utils/prisma'; // Adjust path if needed
+import { AuthenticatedHandler, AuthenticatedRequest, UserToken } from '@/utils/types';
 
-const authenticate = (handler: NextApiHandler) => {
-  return async (req: NextApiRequest, res: NextApiResponse) => {
+
+const authenticate = (handler: AuthenticatedHandler) => {
+  return async (req: AuthenticatedRequest, res: NextApiResponse) => {
     const token = req.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -11,7 +13,7 @@ const authenticate = (handler: NextApiHandler) => {
     }
 
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+      const decoded: UserToken = jwt.verify(token, process.env.JWT_SECRET!) as UserToken;
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
       });
@@ -21,10 +23,11 @@ const authenticate = (handler: NextApiHandler) => {
       }
 
       // Attach user to the request object
-      (req as any).user = user;
+      req.user = user;
 
       return handler(req, res);
     } catch (error) {
+      console.error('Authentication error:', error);
       return res.status(401).json({ error: 'Unauthorized' });
     }
   };

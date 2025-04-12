@@ -1,8 +1,9 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiResponse } from 'next';
 import prisma from '@/utils/prisma'; // Adjust path if needed
 import authenticate from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/utils/types';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
   const { id } = req.query;
 
   if (!id || typeof id !== 'string') {
@@ -43,7 +44,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             ...(name && { name }),
             ...(barCode && { barCode }),
             ...(price !== undefined && { price }),
-            updatedBy: (req as any).user.id, // Use the authenticated user's ID
+            updatedBy: req.user.id, // Use the authenticated user's ID
             updatedAt: new Date()
           },
         });
@@ -58,7 +59,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     case 'DELETE': {
       // Soft delete a product by setting its active status to INACTIVE
       try {
-        const user = (req as any).user; // User object from the authentication middleware
+        const user = req.user; // User object from the authentication middleware
 
         if (!user || user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
           return res.status(401).json({ error: 'Unauthorized' });

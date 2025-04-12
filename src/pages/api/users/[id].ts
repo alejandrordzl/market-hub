@@ -1,9 +1,10 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiResponse } from 'next';
 import prisma from '@/utils/prisma'; // Adjust path if needed
 import authenticate from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/utils/types';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = (req as any).user; // User object from middleware
+const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
+  const user = req.user; // User object from middleware
   const { id } = req.query;
 
   if (!id || typeof id !== 'string') {
