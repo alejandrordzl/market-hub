@@ -64,7 +64,7 @@ export default function SideBarMenu() {
                     } md:flex flex-col h-screen bg-gray-800 text-white w-full md:w-auto absolute md:static top-0 left-0 z-2`}
             >
                 <div className="flex items-center justify-center p-4">
-                    <a href="/">
+                    <Link href="/">
                         <Image
                             src="/logo.svg"
                             alt="Logo"
@@ -72,7 +72,7 @@ export default function SideBarMenu() {
                             height={50}
                             className="md:w-[150px] md:h-[75px]"
                         />
-                    </a>
+                    </Link>
                 </div>
                 <nav className="flex flex-col p-2 md:p-4">
                     <Link

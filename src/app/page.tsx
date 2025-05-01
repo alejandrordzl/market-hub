@@ -1,7 +1,5 @@
-import Image from "next/image";
 
 export default function Home() {
-  const products = [];
   return (
     <main className="flex flex-col items-center justify-between m-2 md:m-4 ml-0">
       <h1 className="text-2xl md:text-4xl p-2 md:p-4 w-full">Venta</h1>

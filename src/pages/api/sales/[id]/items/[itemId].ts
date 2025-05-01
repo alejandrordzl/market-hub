@@ -68,10 +68,10 @@ const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
         });
 
         // Update total of sale based on all saleProduct items
-        const sale = await prisma.sale.findUnique({
-          where: { id },
-          include: { saleProducts: true },
-        });
+        // const sale = await prisma.sale.findUnique({
+        //   where: { id },
+        //   include: { saleProducts: true },
+        // });
 
         
 
