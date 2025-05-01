@@ -33,12 +33,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased grid grid-cols-12 gap-4`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col md:grid md:grid-cols-12 gap-4`}
       >
-        <div className="col-span-1 md:col-span-2">
+        <div className="md:col-span-2">
           <SideBarMenu />
         </div>
-        <div className="col-span-11 md:col-span-10">
+        <div className="md:col-span-10 px-4">
           {children}
         </div>
       </body>
