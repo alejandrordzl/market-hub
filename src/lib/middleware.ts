@@ -1,7 +1,7 @@
 import { NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import prisma from '@/utils/prisma'; // Adjust path if needed
-import { AuthenticatedHandler, AuthenticatedRequest, UserToken } from '@/utils/types';
+import { AuthenticatedHandler, AuthenticatedRequest, Role, UserToken } from '@/utils/types';
 
 
 const authenticate = (handler: AuthenticatedHandler) => {
@@ -10,6 +10,21 @@ const authenticate = (handler: AuthenticatedHandler) => {
 
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if(token === process.env.CUSTOM_API_KEY) {
+      req.user = {
+        id: 2,
+        email: 'custom-api@abarroteslulu.com',
+        name: 'Custom API',
+        role: Role.USER,
+        active: 'ACTIVE',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        password:'',
+        phone: '',
+      }
+      return handler(req, res);
     }
 
     try {
