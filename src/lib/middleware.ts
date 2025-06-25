@@ -11,8 +11,7 @@ const authenticate = (handler: AuthenticatedHandler) => {
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
-    if(token === process.env.CUSTOM_API_KEY) {
+    if(token === process.env.NEXT_PUBLIC_CUSTOM_API_KEY) {
       req.user = {
         id: 2,
         email: 'custom-api@abarroteslulu.com',

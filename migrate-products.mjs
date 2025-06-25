@@ -6,11 +6,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const API_URL = 'http://localhost:3000/api/products';
-const API_KEY = process.env.CUSTOM_API_KEY;
+const API_KEY = process.env.NEXT_CUSTOM_API_KEY;
 
 // Ensure the API key is set
 if (!API_KEY) {
-  console.error('Error: CUSTOM_API_KEY is not set in the environment variables.');
+  console.error('Error: NEXT_CUSTOM_API_KEY is not set in the environment variables.');
   process.exit(1);
 }
 
