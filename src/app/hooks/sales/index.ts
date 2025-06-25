@@ -5,7 +5,7 @@ import useSWR, { mutate } from "swr";
 export const useCurrentSale = () => {
   const client = useClient();
   
-  const fetcher = async (key: string) => {
+  const fetcher = async () => {
     // Check if we have a current sale ID stored (you might want to store this in localStorage or context)
     const currentSaleId = localStorage.getItem('currentSaleId');
     if (!currentSaleId) return null;
