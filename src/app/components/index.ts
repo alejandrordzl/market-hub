@@ -1,2 +1,2 @@
-export { SearchInputComponent } from "./searchInput";
+export { SearchInputComponent } from "./SearchInputComponent";
 export * as SideBarMenu from "./sideBarMenu";

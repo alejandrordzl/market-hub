@@ -16,7 +16,11 @@ const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
         const sale = await prisma.sale.findUnique({
           where: { id },
           include: {
-            saleProducts: true,
+            saleProducts: {
+              include: {
+                product: true,
+              },
+            },
             seller: true,
           },
         });
