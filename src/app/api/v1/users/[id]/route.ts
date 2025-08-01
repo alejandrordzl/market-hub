@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
 import { getAuthenticatedUser, isAdmin } from '@/lib/auth';
+import prisma from '@/utils/prisma';
 
 // PUT /api/v1/users/[id] - Update user
 export async function PUT(

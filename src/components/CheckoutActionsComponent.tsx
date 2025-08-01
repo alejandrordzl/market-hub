@@ -4,7 +4,7 @@ import { useSale } from "@/hooks/sales";
 interface CheckoutActionsComponentProps {
   saleId: string;
 }
-export default function CheckoutActionsComponent({
+export function CheckoutActionsComponent({
   saleId,
 }: CheckoutActionsComponentProps) {
   const { sale } = useSale(saleId);

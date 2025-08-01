@@ -1,11 +1,17 @@
 'use client';
-import { useClient } from "../client";
 import useSWR from "swr";
 
 export function useSale(id?: string) {
 
-  const client = useClient();
-  const { data, error } = useSWR(["sales", id], () => client.getSaleById(id as string));
+
+  const { data, error } = useSWR(["sales", id], async () => {
+    const response = await fetch(`/api/v1/sales/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error("Failed to fetch sale");
+    return response.json();
+  });
 
   return {
     sale: data?.data,

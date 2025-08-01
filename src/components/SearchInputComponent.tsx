@@ -1,14 +1,11 @@
 "use client";
 import { useRef } from "react";
-import { useClient } from "../hooks";
 import { mutate } from "swr";
 
 interface SearchInputComponentProps {
   initialSaleId: string;
 }
 export const SearchInputComponent = ({ initialSaleId }: SearchInputComponentProps) => {
-
-  const client = useClient();
   const ref = useRef<HTMLInputElement>(null);
 
   

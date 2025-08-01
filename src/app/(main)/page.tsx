@@ -1,20 +1,31 @@
+'use client';
+
 import { SearchInputComponent } from "@/components";
-import CheckoutActions from "@/components/CheckoutActionsComponent";
 import { ProductsTableComponent } from "@/components/ProductsTableComponent";
-import { serverSideClient } from "@/hooks/client";
+import { useEffect, useState } from "react";
+import { CheckoutActionsComponent } from "@/components/CheckoutActionsComponent";
 
 async function createInitialSale() {
   try {
-    const response = await serverSideClient.createSale();
-    return response.data;
+   
+   const url = new URL('/api/v1/sales', process.env.NEXT_PUBLIC_BASE_URL);
+   const initialSale = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+   })
+   return initialSale.json();
   } catch (error) {
     console.error("Error fetching initial sale:", error);
   }
 }
-export default async function Home() {
-  const initialSale = await createInitialSale();
+
+export default function Home() {
+  const [initialSale, setInitialSale] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    createInitialSale().then(setInitialSale);
+  }, []);
   if (!initialSale) {
-    return <div>Error creating initial sale</div>;
+    return <div>Loading...</div>;
   }
   return (
     <main className="flex flex-col items-center justify-between m-2 md:m-4 ml-0">
@@ -25,7 +36,7 @@ export default async function Home() {
           <ProductsTableComponent initialSaleId={initialSale.id} />
         </div>
 
-        <CheckoutActions saleId={initialSale.id} />
+        <CheckoutActionsComponent saleId={initialSale.id} />
       </div>
     </main>
   );

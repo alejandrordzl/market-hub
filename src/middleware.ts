@@ -1,60 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { UserToken } from '@/utils/types';
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
   console.log("=== MIDDLEWARE ===");
-  // Solo aplicar a rutas de API v1
-  if (!request.nextUrl.pathname.startsWith('/api/v1')) {
+  const unprotectedRoutes = ["/api/v1/auth/login", "/login", "/api/auth/"];
+
+  if (unprotectedRoutes.includes(request.nextUrl.pathname)) {
+    console.log("Unprotected route, skipping authentication");
     return NextResponse.next();
-  }
-
-  // Skip login endpoint - no requiere autenticación
-  if (request.nextUrl.pathname === '/api/v1/auth/login') {
-    return NextResponse.next();
-  }
-
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.split(' ')[1];
-
-  if (!token) {
-    return NextResponse.json(
-      { error: 'Unauthorized - Missing token' },
-      { status: 401 }
-    );
   }
 
   try {
-    // Handle custom API key
-    if (token === process.env.NEXT_PUBLIC_CUSTOM_API_KEY) {
-      const response = NextResponse.next();
-      response.headers.set('x-user-id', '2');
-      response.headers.set('x-user-role', 'USER');
-      response.headers.set('x-user-name', 'Custom API');
-      response.headers.set('x-user-email', 'custom-api@abarroteslulu.com');
-      return response;
-    }
-
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as UserToken;
-    
-    // Agregar información del usuario a los headers para que los endpoints puedan acceder
+    const token = await getToken({ req: request });
+    console.log("Token:", token);
+    if (!token) {
+      console.log("No token found, redirecting to login");
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
     const response = NextResponse.next();
-    response.headers.set('x-user-id', decoded.id.toString());
-    response.headers.set('x-user-role', decoded.role || 'USER');
-    response.headers.set('x-user-name', decoded.name || 'Unknown');
-    response.headers.set('x-user-email', decoded.email || '');
-    
+    if(request.nextUrl.pathname.startsWith("/api")) {
+      response.headers.set('x-user-id', token.sub);
+      response.headers.set('x-user-role', token.role);
+    }  
+
     return response;
   } catch (error) {
-    console.error('Middleware authentication error:', error);
+    console.error("Middleware authentication error:", error);
     return NextResponse.json(
-      { error: 'Unauthorized - Invalid token' },
+      { error: "Unauthorized - Invalid token" },
       { status: 401 }
     );
   }
 }
 
 export const config = {
-  matcher: ['/api/v1/:path*']
-}
+  matcher: ["/api/v1/:path*"],
+};
