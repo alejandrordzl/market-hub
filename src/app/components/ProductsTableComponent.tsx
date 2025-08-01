@@ -6,7 +6,14 @@ interface ProductsTableComponentProps {
 }
 export function ProductsTableComponent({ initialSaleId }: ProductsTableComponentProps) {
   const { sale, isLoading, isError } = useSale(initialSaleId);
-  console.log("Sale data:", sale);
+  
+  if (isLoading) {
+    return <div className="text-center p-4">Cargando productos...</div>;
+  }
+  if (isError) {
+    return <div className="text-center p-4 text-red-500">Error al cargar los productos</div>;
+  }
+
   return (
     <section className="p-2 overflow-x-auto">
 

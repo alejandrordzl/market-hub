@@ -3,16 +3,10 @@ import { useClient } from "../client";
 import useSWR from "swr";
 
 export function useSale(id?: string) {
-  if (!id) {
-    return {
-      sale: undefined,
-      isLoading: false,
-      isError: false,
-    };
-  }
 
   const client = useClient();
-  const { data, error } = useSWR(["sales", id], () => client.getSaleById(id));
+  const { data, error } = useSWR(["sales", id], () => client.getSaleById(id as string));
+
   return {
     sale: data?.data,
     isLoading: !error && !data,

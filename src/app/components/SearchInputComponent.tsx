@@ -1,7 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useClient } from "../hooks";
-import { Sale } from "@/utils/types";
 import { mutate } from "swr";
 
 interface SearchInputComponentProps {
