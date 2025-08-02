@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { signIn } from "next-auth/react";
 // import { redirect } from "next/navigation";
 import { useState } from "react";
@@ -6,8 +6,10 @@ import { useState } from "react";
 export default function LoginPage() {
   const [userId, setUserId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const handleLogin = async (e: React.FormEvent) => {
     try {
+      setLoading(true);
       e.preventDefault();
       if (!userId) return;
 
@@ -24,16 +26,31 @@ export default function LoginPage() {
       window.location.href = "/";
     } catch (error) {
       console.error("Unexpected error:", error);
-      setError(`Error inesperado: ${error instanceof Error ? error.message : "Ocurrió un error desconocido"}`);
+      setError(
+        `Error inesperado: ${
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error desconocido"
+        }`
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <main className="flex flex-col items-center justify-between p-4">
+      {loading && (
+        <div className="absolute top-0 left-0 w-full h-full bg-gray-100 opacity-80 z-3">
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-black my-4" />
+            <span>Cargando...</span>
+          </div>
+        </div>
+      )}
       <h1 className="text-2xl md:text-4xl">Iniciar sesión</h1>
       <form className="flex flex-col w-full max-w-md" onSubmit={handleLogin}>
         <div className="text-red-500 mb-4">{error && <p>{error}</p>}</div>
-        <label htmlFor="userId">Número de empleado</label>
         <input
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
@@ -42,7 +59,7 @@ export default function LoginPage() {
           placeholder="Numero de empleado"
           className="mb-4 p-2 border border-gray-300 rounded"
         />
-        <button className="bg-blue-500 text-white p-2 rounded">
+        <button className="bg-blue-500 text-white p-2 rounded cursor-pointer">
           Iniciar sesión
         </button>
       </form>
