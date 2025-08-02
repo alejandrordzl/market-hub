@@ -5,12 +5,12 @@ interface ProductsTableComponentProps {
   initialSaleId: string;
 }
 export function ProductsTableComponent({ initialSaleId }: ProductsTableComponentProps) {
-  const { sale, isLoading, isError } = useSale(initialSaleId);
-  
+  const { data, isLoading, error } = useSale(initialSaleId);
+
   if (isLoading) {
     return <div className="text-center p-4">Cargando productos...</div>;
   }
-  if (isError) {
+  if (error) {
     return <div className="text-center p-4 text-red-500">Error al cargar los productos</div>;
   }
 
@@ -42,11 +42,11 @@ export function ProductsTableComponent({ initialSaleId }: ProductsTableComponent
       </thead>
       <tbody className="bg-white">
         {
-          sale?.saleProducts.map((item) => (
+          data?.saleProducts.map((item) => (
             <tr key={item.id} className="border-b hover:bg-gray-100">
-              <td className="px-4 md:px-6 py-2">{item.product.barCode}</td>
-              <td className="px-4 md:px-6 py-2">{item.product.name}</td>
-              <td className="px-4 md:px-6 py-2">${item.product.price?.toFixed(2)}</td>
+              <td className="px-4 md:px-6 py-2">{item.product?.barCode}</td>
+              <td className="px-4 md:px-6 py-2">{item.product?.name}</td>
+              <td className="px-4 md:px-6 py-2">${item.product?.price?.toFixed(2)}</td>
               <td className="px-4 md:px-6 py-2">{item.quantity}</td>
               <td className="px-4 md:px-6 py-2">
                 ${((item.product?.price || 0) * item.quantity).toFixed(2)}

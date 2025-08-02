@@ -38,6 +38,7 @@ export type Sale = {
     change: number;
     saleDate: Date;
     status: SaleStatus;
+    saleProducts: SaleItem[];
 };
 export type SaleItem = {
     id: string;
@@ -45,6 +46,7 @@ export type SaleItem = {
     productId: string;
     quantity: number;
     unitPrice: number | null;
+    product?: Product;
 };
 export const Role = {
     SUPER_ADMIN: 'SUPER_ADMIN',

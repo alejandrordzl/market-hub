@@ -12,14 +12,14 @@ export interface AuthenticatedUser {
 
 // Extend the Session type to include user.id
 declare module "next-auth" {
-  interface Session extends DefaultSession{
+  interface Session extends DefaultSession {
     user: {
       id: string;
       role: Role;
     };
   }
   interface User extends DefaultUser {
-    role: Role
+    role: Role;
   }
 }
 
@@ -36,14 +36,6 @@ export function getAuthenticatedUser(request: NextRequest): AuthenticatedUser {
     id: parseInt(request.headers.get("x-user-id") || "0"),
     role: (request.headers.get("x-user-role") || "USER") as Role,
   };
-}
-
-// Helper para verificar roles específicos
-export function requireRole(
-  user: AuthenticatedUser,
-  allowedRoles: Role[]
-): boolean {
-  return allowedRoles.includes(user.role);
 }
 
 // Helpers de conveniencia
@@ -90,9 +82,9 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (token?.sub) {
-        session.user.id = token.sub
+        session.user.id = token.sub;
         session.user.role = token.role as Role;
-      };
+      }
       return session;
     },
   },

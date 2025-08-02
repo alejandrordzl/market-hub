@@ -7,14 +7,14 @@ interface CheckoutActionsComponentProps {
 export function CheckoutActionsComponent({
   saleId,
 }: CheckoutActionsComponentProps) {
-  const { sale } = useSale(saleId);
+  const { data } = useSale(saleId);
   return (
     <section className="flex flex-col gap-4 md:gap-8 w-full md:w-[20%] p-2">
       <RecargasButton />
       <div className="flex flex-col items-center bg-white p-2 gap-2 rounded-lg">
         <h2 className="text-2xl md:text-3xl">Total:</h2>
         <h2 className="text-3xl md:text-4xl font-semibold">
-          ${sale?.total?.toFixed(2)}
+          ${data?.total?.toFixed(2)}
         </h2>
       </div>
       <button className="w-full h-12 md:h-16 text-xl md:text-2xl bg-green-500 hover:bg-green-600 hover:cursor-pointer text-white p-2 rounded-md font-semibold">

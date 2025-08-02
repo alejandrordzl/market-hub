@@ -1,4 +1,5 @@
 "use client";
+import { Product } from "@/utils/types";
 import { useRef } from "react";
 import { mutate } from "swr";
 
@@ -16,34 +17,44 @@ export const SearchInputComponent = ({ initialSaleId }: SearchInputComponentProp
       alert("Por favor, ingrese un código de barras");
       return;
     }
+    const result = await fetch(`/api/v1/products/code/${barcode}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    const searchProductResponse: { data: Product[] } = await result.json();
 
-    const getProductResponse = await client.getProductByBarCode(barcode);
-    if (getProductResponse.status === 404) {
+    if (result.status === 404) {
       alert("Producto no encontrado");
-    } else if (getProductResponse.status !== 200) {
+    } else if (result.status !== 200) {
       alert("Error al buscar el producto, por favor intente de nuevo");
     }
-    if (getProductResponse.data.data.length > 1) {
+    if (searchProductResponse.data.length > 1) {
       alert(
         "Se encontraron múltiples productos con el mismo código de barras. Por favor, verifique el código de barras."
       );
       return;
-    } else if (getProductResponse.data.data.length === 0) {
+    } else if (searchProductResponse.data.length === 0) {
       alert(
         "No se encontraron productos con el código de barras proporcionado."
       );
     }
-    const firstProduct = getProductResponse.data.data[0];
-    const addItemResponse = await client.addSaleItem(initialSaleId, {
-      productId: firstProduct.id,
-      quantity: 1,
+    const firstProduct = searchProductResponse.data[0];
+
+    const addItemResponse = await fetch(`/api/v1/sales/${initialSaleId}/items`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        productId: firstProduct.id,
+        quantity: 1,
+      }),
     });
-    if (addItemResponse.status === 201) {
-      console.log("Product added to sale successfully");
+    if (addItemResponse.ok) {
       mutate(["sales", initialSaleId]);
       ref.current!.value = "";
     } else {
-      console.log("Error found in addItemResponse:", addItemResponse);
       alert("Error al agregar el producto a la venta");
     }
   }

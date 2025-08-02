@@ -21,7 +21,6 @@ export default function LoginPage() {
         setError("Error al iniciar sesión");
         return;
       }
-      console.log("Inicio de sesión exitoso:", result);
       window.location.href = "/";
     } catch (error) {
       console.error("Unexpected error:", error);

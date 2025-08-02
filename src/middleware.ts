@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
-  console.log("=== MIDDLEWARE ===");
   const unprotectedRoutes = ["/api/v1/auth/login", "/login", "/api/auth/"];
 
   if (unprotectedRoutes.includes(request.nextUrl.pathname)) {
@@ -13,7 +12,6 @@ export async function middleware(request: NextRequest) {
   try {
     // Verify JWT token
     const token = await getToken({ req: request });
-    console.log("Token:", token);
     if (!token) {
       console.log("No token found, redirecting to login");
       return NextResponse.redirect(new URL("/login", request.url));

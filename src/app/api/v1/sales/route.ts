@@ -53,7 +53,6 @@ export async function GET(request: NextRequest) {
 // POST /api/v1/sales - Create a new sale
 export async function POST(request: NextRequest) {
   const user = getAuthenticatedUser(request);
-  console.log("Authenticated User:", user);
   try {
     const newSale = await prisma.sale.create({
       data: {
