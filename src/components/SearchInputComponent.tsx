@@ -1,6 +1,6 @@
 "use client";
 import { Product } from "@/utils/types";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { mutate } from "swr";
 
 interface SearchInputComponentProps {
@@ -9,8 +9,17 @@ interface SearchInputComponentProps {
 export const SearchInputComponent = ({ initialSaleId }: SearchInputComponentProps) => {
   const ref = useRef<HTMLInputElement>(null);
 
-  
+  useEffect(() => {
+    // Auto focus input field on component mount
+    ref.current?.focus();
 
+    // Keep focusing every 10 second in case of losing focus
+    const autoFocusInterval = setInterval(() => {
+      ref.current?.focus();
+    }, 10000);
+    return () => clearInterval(autoFocusInterval);
+  }, []);
+  
   async function handleSearchProduct() {
     const barcode = ref.current?.value;
     if (!barcode) {
