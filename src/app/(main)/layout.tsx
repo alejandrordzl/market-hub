@@ -2,6 +2,7 @@
 import { SideBarMenu } from "@/components";
 import { useSession, signOut } from "next-auth/react";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 
 export default function AuthenticatedLayout({
   children,
@@ -22,7 +23,7 @@ export default function AuthenticatedLayout({
       </div>
       <div className="md:col-span-10 px-4">{children}</div>
       <div className="absolute top-5 right-5 flex justify-center items-center flex-col">
-        <img
+        <Image
           onClick={logout}
           className="hover:cursor-pointer"
           src="/logout.png"
