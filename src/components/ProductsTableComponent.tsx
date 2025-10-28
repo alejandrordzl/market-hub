@@ -1,4 +1,5 @@
 'use client';
+import { mutate } from "swr";
 import { useSale } from "../hooks/sales";
 
 interface ProductsTableComponentProps {
@@ -12,6 +13,23 @@ export function ProductsTableComponent({ initialSaleId }: ProductsTableComponent
   }
   if (error) {
     return <div className="text-center p-4 text-red-500">Error al cargar los productos</div>;
+  }
+
+  async function deleteItemFromSale(itemId: string) {
+    try {
+      const response = await fetch(`/api/v1/sales/${initialSaleId}/items/${itemId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error("Error deleting item from sale");
+      }
+      mutate(["sales", initialSaleId]);
+    } catch (error) {
+      console.error("Error deleting item from sale:", error);
+      //TODO: Show toast notification
+    }
+
   }
 
   return (
@@ -52,7 +70,7 @@ export function ProductsTableComponent({ initialSaleId }: ProductsTableComponent
                 ${((item.product?.price || 0) * item.quantity).toFixed(2)}
               </td>
               <td className="px-4 md:px-6 py-2">
-                <button className="text-red-500 hover:text-red-700">Eliminar</button>
+                <button onClick={()=> deleteItemFromSale(item.id)} className="text-red-500 hover:text-red-700">Eliminar</button>
               </td>
             </tr>
           ))
