@@ -16,6 +16,8 @@ declare module "next-auth" {
     user: {
       id: string;
       role: Role;
+      name: string | null;
+      email: string | null;
     };
   }
   interface User extends DefaultUser {
@@ -27,6 +29,8 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     sub: string;
     role: Role;
+    email: string | null;
+    name: string | null;
   }
 }
 
@@ -68,6 +72,8 @@ export const authOptions: AuthOptions = {
         return {
           role: user.role,
           id: user.id.toString(),
+          name: user.name || "",
+          email: user.email || "",
         };
       },
     }),
@@ -77,6 +83,8 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.sub = user.id;
         token.role = user.role;
+        token.email = user.email || null;
+        token.name = user.name || null;
       }
       return token;
     },
@@ -84,6 +92,8 @@ export const authOptions: AuthOptions = {
       if (token?.sub) {
         session.user.id = token.sub;
         session.user.role = token.role as Role;
+        session.user.email = token.email;
+        session.user.name = token.name;
       }
       return session;
     },
