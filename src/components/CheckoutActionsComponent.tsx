@@ -7,7 +7,7 @@ interface CheckoutActionsComponentProps {
   saleId: string;
   isModalOpen: boolean;
   setIsModalOpen: (isOpen: boolean) => void;
-  createInitialSale: () => Promise<any>;
+  createInitialSale: () => Promise<{ id: string } | undefined>;
   setInitialSale: Dispatch<
     SetStateAction<{
       id: string;
@@ -77,7 +77,7 @@ export function CheckoutActionsComponent({
           amountReceivedRef.current.value = "";
         }
         const newSale = await createInitialSale();
-        setInitialSale(newSale);
+        setInitialSale({ id: newSale?.id || "" });
       } else {
         console.error("Error confirming payment:", response.statusText);
       }

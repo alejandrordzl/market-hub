@@ -59,7 +59,7 @@ const Modal = ({
     if (isOpen) {
       onOpen?.();
     }
-  }, [isOpen]);
+  }, [isOpen, onOpen]);
 
   if (!isOpen) return null;
 
