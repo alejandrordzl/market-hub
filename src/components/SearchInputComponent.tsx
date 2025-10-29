@@ -1,5 +1,4 @@
 "use client";
-import { useSale } from "@/hooks/sales";
 import { useEffect, useRef } from "react";
 import { mutate } from "swr";
 
@@ -14,7 +13,6 @@ export const SearchInputComponent = ({
   isModalOpen,
 }: SearchInputComponentProps) => {
   const ref = useRef<HTMLInputElement>(null);
-  const { data: sale } = useSale(initialSaleId);
   useEffect(() => {
     // Auto focus input field on component mount
     ref.current?.focus();

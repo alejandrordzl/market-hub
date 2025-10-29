@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/utils/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
 
 // POST /api/v1/sales/[id]/items/add - Add item to sale by barcode
 export async function POST(
@@ -17,7 +16,6 @@ export async function POST(
   }
 
   try {
-    const user = getAuthenticatedUser(request);
     const body = await request.json();
     const { barCode } = body;
 
