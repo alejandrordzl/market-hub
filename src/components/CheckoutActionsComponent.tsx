@@ -1,7 +1,7 @@
 "use client";
 import { useSale } from "@/hooks/sales";
 import Modal from "./Modal";
-import { Dispatch, SetStateAction, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useMemo, useRef, useState } from "react";
 
 interface CheckoutActionsComponentProps {
   saleId: string;
@@ -23,9 +23,17 @@ export function CheckoutActionsComponent({
 }: CheckoutActionsComponentProps) {
   const { data } = useSale(saleId);
   const [change, setChange] = useState<number>(0);
+  const [amountReceived, setAmountReceived] = useState<number>(0);
   const amountReceivedRef = useRef<HTMLInputElement>(null);
+  const total = useMemo(() => {
+    return data?.total || 0;
+  }, [data?.total]);
+
+  const isAmountValid = useMemo(() => {
+    return amountReceived >= total;
+  }, [total, amountReceived]);
+
   function handleAmountReceived(event: React.KeyboardEvent<HTMLInputElement>) {
-    const amountReceived = parseFloat(amountReceivedRef.current?.value || "0");
     if (event.key === "Enter") {
       event.preventDefault();
       handleConfirmPayment();
@@ -36,7 +44,7 @@ export function CheckoutActionsComponent({
       // Handle invalid input
       return;
     }
-    const change = amountReceived - (data?.total || 0);
+    const change = amountReceived - total;
     if (change >= 0) {
       setChange(change);
     } else {
@@ -46,10 +54,7 @@ export function CheckoutActionsComponent({
 
   async function handleConfirmPayment() {
     try {
-      const amountReceived = parseFloat(
-        amountReceivedRef.current?.value || "0"
-      );
-      if (amountReceived < (data?.total || 0)) {
+      if (!isAmountValid) {
         console.log(
           "Amount received is less than total, cannot confirm payment"
         );
@@ -73,6 +78,7 @@ export function CheckoutActionsComponent({
         setIsModalOpen(false);
         // Optionally reset change and amount received
         setChange(0);
+        setAmountReceived(0);
         if (amountReceivedRef.current) {
           amountReceivedRef.current.value = "";
         }
@@ -109,31 +115,55 @@ export function CheckoutActionsComponent({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       >
-        <h4 className="text-lg font-semibold">Total</h4>
-        <span className="text-xl">${data?.total?.toFixed(2)}</span>
-        <h4 className="text-lg font-semibold">Cantidad Recibida</h4>
-        <div>
-          <span className="pr-1">$</span>
-          <input
-            className="pl-1 border-b border-gray-400 focus:outline-none w-32 text-xl"
-            disabled={isNaN(change) || !data?.total}
-            type="number"
-            placeholder="0.00"
-            onKeyUp={handleAmountReceived}
-            ref={amountReceivedRef}
-          />
-        </div>
+        <section className="flex flex-col gap-4">
+          <div>
+            <h4 className="text-lg font-semibold">Total</h4>
+            <span className="text-xl">${data?.total?.toFixed(2)}</span>
+          </div>
+          <div>
+            <h4 className="text-lg font-semibold">Cantidad Recibida</h4>
+            <div>
+              <span className="pr-1">$</span>
+              <input
+                className="pl-1 border-b border-gray-400 focus:outline-none w-32 text-xl"
+                disabled={isNaN(change) || !data?.total}
+                type="number"
+                placeholder="0.00"
+                onKeyUp={handleAmountReceived}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (isNaN(value)) setAmountReceived(0);
+                  else setAmountReceived(value);
+                }}
+                ref={amountReceivedRef}
+              />
+            </div>
+          </div>
 
-        <h4 className="text-lg font-semibold">Cambio</h4>
-        <span className="text-xl">${change.toFixed(2)}</span>
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={() => handleConfirmPayment()}
-            className="bg-green-500 text-white p-2 rounded-md"
-          >
-            Confirmar
-          </button>
-        </div>
+          {isAmountValid ? (
+            <div>
+              <h4 className="text-lg font-semibold">Cambio</h4>
+              <span className="text-xl">${change.toFixed(2)}</span>
+            </div>
+          ) : (
+            <div>
+              <h4 className="text-lg font-semibold">Faltante</h4>
+              <span className="text-xl text-red-500">
+                ${(total - amountReceived).toFixed(2)}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-end mt-4">
+            <button
+              disabled={!isAmountValid}
+              onClick={() => handleConfirmPayment()}
+              className="bg-green-500 text-white p-2 rounded-md hover:cursor-pointer disabled:hover:cursor-default disabled:bg-red-500 disabled:opacity-50"
+            >
+              {isAmountValid ? "Confirmar Pago" : "Cantidad Insuficiente"}
+              {/* Confirmar */}
+            </button>
+          </div>
+        </section>
       </Modal>
     </section>
   );
