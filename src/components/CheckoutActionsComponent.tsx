@@ -69,9 +69,6 @@ export function CheckoutActionsComponent({
       if (response.ok) {
         setIsModalOpen(false);
         setAmountReceived(0);
-        if (amountReceivedRef.current) {
-          amountReceivedRef.current.value = "";
-        }
         const newSale = await createInitialSale();
         setInitialSale({ id: newSale?.id || "" });
       } else {
@@ -136,6 +133,7 @@ export function CheckoutActionsComponent({
                 className="pl-1 border-b border-gray-400 focus:outline-none w-32 text-xl"
                 type="number"
                 placeholder="0.00"
+                defaultValue={amountReceived || ""}
                 onKeyUp={handleOnKeyUp}
                 onChange={(e) => {
                   const value = parseFloat(e.target.value);
@@ -167,7 +165,6 @@ export function CheckoutActionsComponent({
               className="bg-green-500 text-white p-2 rounded-md hover:cursor-pointer disabled:hover:cursor-default disabled:bg-red-500 disabled:opacity-50"
             >
               {isAmountValid ? "Confirmar Pago" : "Cantidad Insuficiente"}
-              {/* Confirmar */}
             </button>
           </div>
         </section>
