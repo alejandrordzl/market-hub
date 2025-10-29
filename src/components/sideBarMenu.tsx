@@ -5,8 +5,14 @@ import { useState } from "react";
 
 export function SideBarMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isProductsExpanded, setIsProductsExpanded] = useState(false);
+  
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  const toggleProducts = () => {
+    setIsProductsExpanded(!isProductsExpanded);
   };
 
   return (
@@ -74,22 +80,90 @@ export function SideBarMenu() {
           </Link>
         </div>
         <nav className="flex flex-col p-2 md:p-4">
-          <Link
-            href="/products"
-            className="py-2 px-2 md:px-4 hover:bg-gray-700 rounded text-lg md:text-xl"
-          >
-            <div className="flex items-center">
-              <Image
-                src="/products.png"
-                alt="Products"
-                width={20}
-                height={20}
-                className="inline-block mr-2"
-              />
-              <span>Productos</span>
+          {/* Products Menu */}
+          <div className="mb-2">
+            <button
+              onClick={toggleProducts}
+              className="w-full py-2 px-2 md:px-4 hover:bg-gray-700 rounded text-lg md:text-xl flex items-center justify-between md:pointer-events-none"
+            >
+              <div className="flex items-center">
+                <Image
+                  src="/products.png"
+                  alt="Products"
+                  width={20}
+                  height={20}
+                  className="inline-block mr-2"
+                />
+                <span>Productos</span>
+              </div>
+              {/* Arrow icon - only visible on mobile */}
+              <svg
+                className={`w-5 h-5 transform transition-transform duration-200 md:hidden ${
+                  isProductsExpanded ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            
+            {/* Submenu - always visible on desktop, toggleable on mobile */}
+            <div className={`${isProductsExpanded ? 'block' : 'hidden'} md:block ml-4 mt-1`}>
+              <Link
+                href="/products"
+                className="block py-1.5 px-3 text-sm md:text-base text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                onClick={() => setIsOpen(false)} // Close mobile menu when clicking submenu
+              >
+                <div className="flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                  Ver lista de productos
+                </div>
+              </Link>
+              
+              <Link
+                href="/products/add"
+                className="block py-1.5 px-3 text-sm md:text-base text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                onClick={() => setIsOpen(false)} // Close mobile menu when clicking submenu
+              >
+                <div className="flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Agregar producto
+                </div>
+              </Link>
             </div>
-          </Link>
-          <Link
+          </div>
+          {/* <Link
             href="/sales"
             className="py-2 px-2 md:px-4 hover:bg-gray-700 rounded text-lg md:text-xl"
           >
@@ -103,7 +177,7 @@ export function SideBarMenu() {
               />
               <span>Ventas</span>
             </div>
-          </Link>
+          </Link> */}
         </nav>
       </div>
     </div>
