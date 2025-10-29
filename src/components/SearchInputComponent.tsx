@@ -6,9 +6,13 @@ import { mutate } from "swr";
 
 interface SearchInputComponentProps {
   initialSaleId: string;
+  setModalOpen?: (isOpen: boolean) => void;
+  isModalOpen: boolean;
 }
 export const SearchInputComponent = ({
   initialSaleId,
+  setModalOpen,
+  isModalOpen,
 }: SearchInputComponentProps) => {
   const ref = useRef<HTMLInputElement>(null);
   const { data: sale } = useSale(initialSaleId);
@@ -18,10 +22,11 @@ export const SearchInputComponent = ({
 
     // Keep focusing every 10 second in case of losing focus
     const autoFocusInterval = setInterval(() => {
+      if(isModalOpen) return;
       ref.current?.focus();
     }, 10000);
     return () => clearInterval(autoFocusInterval);
-  }, []);
+  }, [isModalOpen]);
 
   async function updateItemQuantity(itemInSale: SaleItem) {
     try {
@@ -49,6 +54,10 @@ export const SearchInputComponent = ({
 
   async function handleSearchProduct() {
     const barcode = ref.current?.value;
+    if(barcode === ""){
+      setModalOpen?.(true);
+      return;
+    }
     if (!barcode) {
       alert("Por favor, ingrese un código de barras");
       return;
