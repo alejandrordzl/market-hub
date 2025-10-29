@@ -1,7 +1,14 @@
 "use client";
 import { useSale } from "@/hooks/sales";
 import Modal from "./Modal";
-import { Dispatch, SetStateAction, useMemo, useRef, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 interface CheckoutActionsComponentProps {
   saleId: string;
@@ -22,9 +29,9 @@ export function CheckoutActionsComponent({
   setInitialSale,
 }: CheckoutActionsComponentProps) {
   const { data } = useSale(saleId);
-  const [change, setChange] = useState<number>(0);
   const [amountReceived, setAmountReceived] = useState<number>(0);
   const amountReceivedRef = useRef<HTMLInputElement>(null);
+
   const total = useMemo(() => {
     return data?.total || 0;
   }, [data?.total]);
@@ -33,26 +40,11 @@ export function CheckoutActionsComponent({
     return amountReceived >= total;
   }, [total, amountReceived]);
 
-  function handleAmountReceived(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleConfirmPayment();
-      return;
-    }
+  const change = useMemo(() => {
+    return isAmountValid ? amountReceived - total : 0;
+  }, [isAmountValid, amountReceived, total]);
 
-    if (isNaN(amountReceived)) {
-      // Handle invalid input
-      return;
-    }
-    const change = amountReceived - total;
-    if (change >= 0) {
-      setChange(change);
-    } else {
-      setChange(0);
-    }
-  }
-
-  async function handleConfirmPayment() {
+  const handleConfirmPayment = useCallback(async () => {
     try {
       if (!isAmountValid) {
         console.log(
@@ -76,8 +68,6 @@ export function CheckoutActionsComponent({
 
       if (response.ok) {
         setIsModalOpen(false);
-        // Optionally reset change and amount received
-        setChange(0);
         setAmountReceived(0);
         if (amountReceivedRef.current) {
           amountReceivedRef.current.value = "";
@@ -90,8 +80,26 @@ export function CheckoutActionsComponent({
     } catch (error) {
       console.error("Error confirming payment:", error);
     }
-  }
+  }, [
+    amountReceived,
+    change,
+    createInitialSale,
+    isAmountValid,
+    saleId,
+    setAmountReceived,
+    setInitialSale,
+    setIsModalOpen,
+  ]);
 
+  const handleOnKeyUp = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleConfirmPayment();
+      }
+    },
+    [handleConfirmPayment]
+  );
   return (
     <section className="flex flex-col gap-4 md:gap-8 w-full md:w-[20%] p-2">
       <RecargasButton />
@@ -126,10 +134,9 @@ export function CheckoutActionsComponent({
               <span className="pr-1">$</span>
               <input
                 className="pl-1 border-b border-gray-400 focus:outline-none w-32 text-xl"
-                disabled={isNaN(change) || !data?.total}
                 type="number"
                 placeholder="0.00"
-                onKeyUp={handleAmountReceived}
+                onKeyUp={handleOnKeyUp}
                 onChange={(e) => {
                   const value = parseFloat(e.target.value);
                   if (isNaN(value)) setAmountReceived(0);
