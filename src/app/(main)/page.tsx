@@ -21,6 +21,7 @@ async function createInitialSale() {
 
 export default function Home() {
   const [initialSale, setInitialSale] = useState<{ id: string } | null>(null);
+   const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
     createInitialSale().then(setInitialSale);
   }, []);
@@ -32,11 +33,11 @@ export default function Home() {
       <h1 className="text-2xl md:text-4xl p-2 md:p-4 w-full">Venta</h1>
       <div className="flex flex-col md:flex-row w-full p-2 md:p-4 bg-gray-200 rounded-lg">
         <div className="w-full md:w-[80%] flex flex-col p-2 md:p-4">
-          <SearchInputComponent initialSaleId={initialSale.id} />
+          <SearchInputComponent initialSaleId={initialSale.id} isModalOpen={isModalOpen} setModalOpen={setIsModalOpen} />
           <ProductsTableComponent initialSaleId={initialSale.id} />
         </div>
 
-        <CheckoutActionsComponent saleId={initialSale.id} />
+        <CheckoutActionsComponent saleId={initialSale.id} isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} createInitialSale={createInitialSale} setInitialSale={setInitialSale} />
       </div>
     </main>
   );

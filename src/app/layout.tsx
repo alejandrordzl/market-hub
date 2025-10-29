@@ -29,7 +29,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/icon.png" type="image/png" />
+        <link rel="icon" href="/logo.svg" type="image/svg+xml" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider session={session}>{children}</AuthProvider>

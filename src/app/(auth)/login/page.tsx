@@ -1,6 +1,5 @@
 "use client";
 import { signIn } from "next-auth/react";
-// import { redirect } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
@@ -8,9 +7,16 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
+      const parsedId = parseInt(userId);
+      if (isNaN(parsedId)) {
+        setError("El ID de usuario debe ser un número válido");
+        setUserId("");
+        return;
+      }
       setLoading(true);
-      e.preventDefault();
+
       if (!userId) return;
 
       const result = await signIn("credentials", {
