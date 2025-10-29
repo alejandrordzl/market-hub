@@ -1,6 +1,5 @@
 "use client";
 import { useSale } from "@/hooks/sales";
-import { Product, SaleItem } from "@/utils/types";
 import { useEffect, useRef } from "react";
 import { mutate } from "swr";
 
@@ -28,29 +27,7 @@ export const SearchInputComponent = ({
     return () => clearInterval(autoFocusInterval);
   }, [isModalOpen]);
 
-  async function updateItemQuantity(itemInSale: SaleItem) {
-    try {
-      const increaseQuantity = await fetch(
-        `/api/v1/sales/${initialSaleId}/items/${itemInSale.id}`,
-        {
-          method: "PUT",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            quantity: itemInSale.quantity + 1,
-          }),
-        }
-      );
-      if (increaseQuantity.ok) {
-        mutate(["sales", initialSaleId]);
-      }
-      ref.current!.value = "";
-    } catch (error) {
-      console.error("Error updating item quantity:", error);
-    }
-  }
+
 
   async function handleSearchProduct() {
     const barcode = ref.current?.value;
@@ -62,37 +39,14 @@ export const SearchInputComponent = ({
       alert("Por favor, ingrese un código de barras");
       return;
     }
-    const itemInSale = sale?.saleProducts.find(
-      (sp) => sp?.product?.barCode === barcode
-    );
-    if (itemInSale) {
-      await updateItemQuantity(itemInSale);
-    } else {
-      const result = await fetch(`/api/v1/products/code/${barcode}`, {
-        method: "GET",
-        credentials: "include",
-      });
-      const searchProductResponse: { data: Product[] } = await result.json();
 
-      if (result.status === 404) {
-        alert("Producto no encontrado");
-      } else if (result.status !== 200) {
-        alert("Error al buscar el producto, por favor intente de nuevo");
-      }
-      if (searchProductResponse.data.length > 1) {
-        alert(
-          "Se encontraron múltiples productos con el mismo código de barras. Por favor, verifique el código de barras."
-        );
-        return;
-      } else if (searchProductResponse.data.length === 0) {
-        alert(
-          "No se encontraron productos con el código de barras proporcionado."
-        );
-      }
-      const firstProduct = searchProductResponse.data[0];
+    // Clear input immediately for better UX
+    ref.current!.value = "";
 
-      const addItemResponse = await fetch(
-        `/api/v1/sales/${initialSaleId}/items`,
+    try {
+      // Start the API call without awaiting to make it non-blocking
+      const addItemPromise = fetch(
+        `/api/v1/sales/${initialSaleId}/items/add`,
         {
           method: "POST",
           credentials: "include",
@@ -100,17 +54,41 @@ export const SearchInputComponent = ({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            productId: firstProduct.id,
-            quantity: 1,
+            barCode: barcode.trim(),
           }),
         }
       );
+
+      // Immediately refresh the data (optimistic update)
+      
+
+      // Handle the response in the background
+      const addItemResponse = await addItemPromise;
       if (addItemResponse.ok) {
-        mutate(["sales", initialSaleId]);
-        ref.current!.value = "";
+          mutate(["sales", initialSaleId]);
       } else {
-        alert("Error al agregar el producto a la venta");
+        // If there was an error, refresh again to get correct state
+        mutate(["sales", initialSaleId]);
+        
+        const errorData = await addItemResponse.json();
+        
+        // Handle different error cases
+        switch (addItemResponse.status) {
+          case 404:
+            alert("Producto no encontrado o inactivo");
+            break;
+          case 400:
+            alert(errorData.error || "Error en los datos enviados");
+            break;
+          default:
+            alert("Error al agregar el producto a la venta");
+        }
       }
+    } catch (error) {
+      // If network error, refresh data and show error
+      mutate(["sales", initialSaleId]);
+      console.error("Error adding product to sale:", error);
+      alert("Error al conectar con el servidor");
     }
   }
 
