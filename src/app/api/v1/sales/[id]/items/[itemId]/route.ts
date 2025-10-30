@@ -30,19 +30,41 @@ export async function PUT(
       where: { id: itemId },
       include: { product: true },
     });
-
+    const isAdding = quantity > saleProduct?.quantity!;
     if (!saleProduct) {
       return NextResponse.json(
         { error: 'Sale item not found' },
         { status: 404 }
       );
     }
-
-    const updatedProductSaleItem = await prisma.saleProduct.update({
-      where: { id: itemId },
-      data: {
-        ...(quantity && { quantity }),
-      },
+    const updatedProductSaleItem = await prisma.$transaction(async (tx) => {
+      const updatedItem = await tx.saleProduct.update({
+        where: { id: itemId },
+        data: {
+          ...(quantity && { quantity }),
+        },
+      });
+      if(isAdding) {
+        await tx.sale.update({
+          where: { id },
+          data: {
+            total: {
+              increment: (quantity - saleProduct.quantity) * saleProduct.product.price,
+            },
+          },
+        });
+      } else {
+        await tx.sale.update({
+          where: { id },
+          data: {
+            total: {
+              decrement: (saleProduct.quantity - quantity) * saleProduct.product.price,
+            },
+          },
+        });
+      }
+      
+      return updatedItem;
     });
 
     return NextResponse.json({ updatedProductSaleItem });
