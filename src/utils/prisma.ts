@@ -1,13 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+// This file is kept for backward compatibility but now exports the Drizzle database instance
+import db from "@/db";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
-
-export default prisma;
+export default db;

@@ -1,4 +1,14 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { 
+  User as DrizzleUser, 
+  Product as DrizzleProduct, 
+  Sale as DrizzleSale, 
+  SaleProduct as DrizzleSaleProduct,
+  Role as DrizzleRole,
+  Status as DrizzleStatus,
+  PaymentMethod as DrizzlePaymentMethod,
+  SaleStatus as DrizzleSaleStatus
+} from "@/db/schema";
 
 export interface CreateProductBody {
     name: string;
@@ -6,77 +16,44 @@ export interface CreateProductBody {
     price: number;
 }
 
-export type User = {
-    id: number;
-    name: string;
-    password: string;
-    phone: string;
-    role: Role | null;
-    email: string | null;
-    createdAt: Date | null;
-    updatedAt: Date | null;
-    active: Status | null;
-};
-
-export type Product = {
-    id: string;
-    name: string;
-    barCode: string;
-    price: number | null;
-    createdAt: Date | null;
-    updatedAt: Date | null;
-    active: Status;
-    createdBy: number;
-    updatedBy: number;
-};
-export type Sale = {
-    id: string;
-    sellerId: number;
-    paymentMethod: PaymentMethod;
-    total: number;
-    amountReceived: number;
-    change: number;
-    saleDate: Date;
-    status: SaleStatus;
+// Re-export Drizzle types for backward compatibility
+export type User = DrizzleUser;
+export type Product = DrizzleProduct;
+export type Sale = DrizzleSale & {
     saleProducts: SaleItem[];
 };
-export type SaleItem = {
-    id: string;
-    saleId: string;
-    productId: string;
-    quantity: number;
-    unitPrice: number | null;
+export type SaleItem = DrizzleSaleProduct & {
+    unitPrice?: number | null;
     product?: Product;
 };
+// Re-export Drizzle enum types
+export type Role = DrizzleRole;
+export type Status = DrizzleStatus;  
+export type PaymentMethod = DrizzlePaymentMethod;
+export type SaleStatus = DrizzleSaleStatus;
+
+// Constants for backward compatibility
 export const Role = {
     SUPER_ADMIN: 'SUPER_ADMIN',
     ADMIN: 'ADMIN',
     USER: 'USER',
 } as const;
 
-export type Role = (typeof Role)[keyof typeof Role];
-
 export const Status = {
     ACTIVE: 'ACTIVE',
     INACTIVE: 'INACTIVE',
 } as const;
-
-export type Status = (typeof Status)[keyof typeof Status];
 
 export const PaymentMethod = {
     CASH: 'CASH',
     CREDIT_CARD: 'CREDIT_CARD',
 } as const;
 
-export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
-
 export const SaleStatus = {
     PENDING: 'PENDING',
     CONCLUDED: 'CONCLUDED',
     CANCELLED: 'CANCELLED',
 } as const;
-
-export type SaleStatus = (typeof SaleStatus)[keyof typeof SaleStatus];
 export interface AuthenticatedRequest extends NextApiRequest {
     user: User;
 }

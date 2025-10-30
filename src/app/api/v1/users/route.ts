@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { users } from '@/db/schema';
+import { count, desc } from 'drizzle-orm';
 import { getAuthenticatedUser, isAdmin, isSuperAdmin } from '@/lib/auth';
 
 // GET /api/v1/users - Get users with pagination
@@ -26,26 +28,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const users = await prisma.user.findMany({
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        active: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const userList = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        role: users.role,
+        active: users.active,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset((page - 1) * limit);
 
-    const totalUsers = await prisma.user.count();
+    const [{ count: totalUsers }] = await db
+      .select({ count: count() })
+      .from(users);
 
     return NextResponse.json({
-      data: users,
+      data: userList,
       meta: {
         total: totalUsers,
         page,
@@ -103,16 +107,17 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the new user
-    const newUser = await prisma.user.create({
-      data: {
+    const [newUser] = await db
+      .insert(users)
+      .values({
         name,
         email,
         password: hashedPassword,
         phone,
-        role,
+        role: role as 'SUPER_ADMIN' | 'ADMIN' | 'USER',
         active: 'ACTIVE',
-      },
-    });
+      })
+      .returning();
 
     return NextResponse.json(newUser, { status: 201 });
   } catch (error) {

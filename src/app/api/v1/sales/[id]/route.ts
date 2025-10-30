@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { sales } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // GET /api/v1/sales/[id] - Get sale by ID
 export async function GET(
@@ -16,11 +18,11 @@ export async function GET(
   }
 
   try {
-    const sale = await prisma.sale.findUnique({
-      where: { id },
-      include: {
+    const sale = await db.query.sales.findFirst({
+      where: eq(sales.id, id),
+      with: {
         saleProducts: {
-          include: {
+          with: {
             product: true,
           },
         },
@@ -70,15 +72,16 @@ export async function PUT(
       );
     }
 
-    const updatedSale = await prisma.sale.update({
-      where: { id },
-      data: {
-        paymentMethod,
+    const [updatedSale] = await db
+      .update(sales)
+      .set({
+        paymentMethod: paymentMethod as 'CASH' | 'CREDIT_CARD',
         amountReceived,
         change,
         status: 'CONCLUDED',
-      },
-    });
+      })
+      .where(eq(sales.id, id))
+      .returning();
 
     return NextResponse.json(updatedSale);
   } catch (error) {

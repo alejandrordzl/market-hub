@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
 import { Role } from "@/utils/types";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthOptions, DefaultSession, DefaultUser } from "next-auth";
-import prisma from "@/utils/prisma";
+import db from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { DefaultJWT } from "next-auth/jwt";
 export interface AuthenticatedUser {
   id: number;
@@ -52,7 +53,6 @@ export function isSuperAdmin(user: AuthenticatedUser): boolean {
 }
 
 export const authOptions: AuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   providers: [
     CredentialsProvider({
@@ -65,8 +65,8 @@ export const authOptions: AuthOptions = {
           throw new Error("User ID is required");
         }
         const id = parseInt(credentials.userId);
-        const user = await prisma.user.findUnique({
-          where: { id },
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, id),
         });
         if (!user || !user.role) return null;
         return {

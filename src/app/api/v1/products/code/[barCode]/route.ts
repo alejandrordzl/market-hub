@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { products } from '@/db/schema';
+import { eq, count } from 'drizzle-orm';
 
 // GET /api/v1/products/code/[barCode] - Search product by barCode
 export async function GET(
@@ -26,17 +28,19 @@ export async function GET(
   }
 
   try {
-    const products = await prisma.product.findMany({
-      where: { barCode },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const productList = await db
+      .select()
+      .from(products)
+      .where(eq(products.barCode, barCode))
+      .limit(limit)
+      .offset((page - 1) * limit);
 
-    const totalProducts = await prisma.product.count({
-      where: { barCode },
-    });
+    const [{ count: totalProducts }] = await db
+      .select({ count: count() })
+      .from(products)
+      .where(eq(products.barCode, barCode));
 
-    if (products.length === 0) {
+    if (productList.length === 0) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
@@ -44,7 +48,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      data: products,
+      data: productList,
       meta: {
         total: totalProducts,
         page,

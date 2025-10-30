@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { saleProducts, sales } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // PUT /api/v1/sales/[id]/items/[itemId] - Update sale item quantity
 export async function PUT(
@@ -26,9 +28,9 @@ export async function PUT(
       );
     }
 
-    const saleProduct = await prisma.saleProduct.findUnique({
-      where: { id: itemId },
-      include: { product: true },
+    const saleProduct = await db.query.saleProducts.findFirst({
+      where: eq(saleProducts.id, itemId),
+      with: { product: true },
     });
 
     if (!saleProduct) {
@@ -38,12 +40,14 @@ export async function PUT(
       );
     }
 
-    const updatedProductSaleItem = await prisma.saleProduct.update({
-      where: { id: itemId },
-      data: {
-        ...(quantity && { quantity }),
-      },
-    });
+    const updateData: Partial<typeof saleProducts.$inferInsert> = {};
+    if (quantity) updateData.quantity = quantity;
+
+    const [updatedProductSaleItem] = await db
+      .update(saleProducts)
+      .set(updateData)
+      .where(eq(saleProducts.id, itemId))
+      .returning();
 
     return NextResponse.json({ updatedProductSaleItem });
   } catch (error) {
@@ -70,9 +74,9 @@ export async function DELETE(
   }
 
   try {
-    const saleItem = await prisma.saleProduct.findUnique({
-      where: { id: itemId },
-      include: { product: true, sale: true },
+    const saleItem = await db.query.saleProducts.findFirst({
+      where: eq(saleProducts.id, itemId),
+      with: { product: true, sale: true },
     });
 
     if (!saleItem) {
@@ -82,23 +86,32 @@ export async function DELETE(
       );
     }
 
-    await prisma.saleProduct.delete({
-      where: { id: itemId },
+    await db
+      .delete(saleProducts)
+      .where(eq(saleProducts.id, itemId));
+
+    const currentSale = await db.query.sales.findFirst({
+      where: eq(sales.id, id),
     });
 
-    const sale = await prisma.sale.update({
-      where: { id },
-      data: {
-        total: {
-          decrement: saleItem.quantity * saleItem.product.price,
-        },
-      },
-    });
+    if (currentSale && saleItem.product) {
+      const [sale] = await db
+        .update(sales)
+        .set({
+          total: currentSale.total - (saleItem.quantity * saleItem.product.price),
+        })
+        .where(eq(sales.id, id))
+        .returning();
 
-    return NextResponse.json({
-      message: 'Item removed successfully',
-      sale,
-    });
+      return NextResponse.json({
+        message: 'Item removed successfully',
+        sale,
+      });
+    } else {
+      return NextResponse.json({
+        message: 'Item removed successfully',
+      });
+    }
   } catch (error) {
     console.error(error);
     return NextResponse.json(

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, isAdmin } from '@/lib/auth';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // PUT /api/v1/users/[id] - Update user
 export async function PUT(
@@ -38,8 +40,8 @@ export async function PUT(
     const { name, email, phone, role, active } = body;
 
     // Fetch the user to be updated
-    const userToUpdate = await prisma.user.findUnique({
-      where: { id: userId },
+    const userToUpdate = await db.query.users.findFirst({
+      where: eq(users.id, userId),
     });
 
     if (!userToUpdate) {
@@ -65,16 +67,18 @@ export async function PUT(
     }
 
     // Update the user
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(phone && { phone }),
-        ...(role && { role }),
-        ...(active && { active }),
-      },
-    });
+    const updateData: Partial<typeof users.$inferInsert> = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    if (role) updateData.role = role;
+    if (active) updateData.active = active;
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
 
     return NextResponse.json(updatedUser);
   } catch (error) {
@@ -119,8 +123,8 @@ export async function DELETE(
     }
 
     // Fetch the user to be "deleted"
-    const userToDelete = await prisma.user.findUnique({
-      where: { id: userId },
+    const userToDelete = await db.query.users.findFirst({
+      where: eq(users.id, userId),
     });
 
     if (!userToDelete) {
@@ -146,12 +150,13 @@ export async function DELETE(
     }
 
     // Soft delete the user by setting their status to INACTIVE
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
         active: 'INACTIVE',
-      },
-    });
+      })
+      .where(eq(users.id, userId))
+      .returning();
 
     return NextResponse.json({
       message: 'User status updated to INACTIVE',

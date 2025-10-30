@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { saleProducts, sales } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // POST /api/v1/sales/[id]/items - Add item to sale
 export async function POST(
@@ -26,27 +28,39 @@ export async function POST(
       );
     }
 
-    const saleProduct = await prisma.saleProduct.create({
-      data: {
+    const [saleProduct] = await db
+      .insert(saleProducts)
+      .values({
         saleId: id,
         productId,
         quantity,
-      },
-      include: {
+      })
+      .returning();
+
+    const saleProductWithProduct = await db.query.saleProducts.findFirst({
+      where: eq(saleProducts.id, saleProduct.id),
+      with: {
         product: true,
       },
     });
 
-    const sale = await prisma.sale.update({
-      where: { id },
-      data: {
-        total: {
-          increment: quantity * saleProduct.product.price,
-        },
-      },
+    const currentSale = await db.query.sales.findFirst({
+      where: eq(sales.id, id),
     });
 
-    return NextResponse.json({ saleProduct, sale }, { status: 201 });
+    if (currentSale && saleProductWithProduct?.product) {
+      const [sale] = await db
+        .update(sales)
+        .set({
+          total: currentSale.total + (quantity * saleProductWithProduct.product.price),
+        })
+        .where(eq(sales.id, id))
+        .returning();
+
+      return NextResponse.json({ saleProduct: saleProductWithProduct, sale }, { status: 201 });
+    } else {
+      return NextResponse.json({ saleProduct: saleProductWithProduct }, { status: 201 });
+    }
   } catch (error) {
     console.error(error);
     return NextResponse.json(

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { products } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { getAuthenticatedUser, isAdmin } from '@/lib/auth';
 
 // GET /api/v1/products/[id] - Get product by ID
@@ -17,8 +19,8 @@ export async function GET(
   }
 
   try {
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, id),
     });
 
     if (!product) {
@@ -64,16 +66,16 @@ export async function PUT(
       );
     }
 
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: {
-        ...(name && { name }),
-        ...(barCode && { barCode }),
-        ...(price !== undefined && { price }),
-        updatedBy: user.id,
-        updatedAt: new Date(),
-      },
-    });
+    const updateData: Partial<typeof products.$inferInsert> = { updatedBy: user.id };
+    if (name) updateData.name = name;
+    if (barCode) updateData.barCode = barCode;
+    if (price !== undefined) updateData.price = price;
+
+    const [updatedProduct] = await db
+      .update(products)
+      .set(updateData)
+      .where(eq(products.id, id))
+      .returning();
 
     return NextResponse.json(updatedProduct);
   } catch (error) {
@@ -109,8 +111,8 @@ export async function DELETE(
   }
 
   try {
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, id),
     });
 
     if (!product) {
@@ -120,14 +122,14 @@ export async function DELETE(
       );
     }
 
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: {
+    const [updatedProduct] = await db
+      .update(products)
+      .set({
         active: 'INACTIVE',
         updatedBy: user.id,
-        updatedAt: new Date(),
-      },
-    });
+      })
+      .where(eq(products.id, id))
+      .returning();
 
     return NextResponse.json({
       message: 'Product deleted successfully',

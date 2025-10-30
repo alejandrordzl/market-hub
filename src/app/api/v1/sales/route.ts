@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { sales } from '@/db/schema';
+import { eq, gte, lte, count, and, SQL } from 'drizzle-orm';
 import { getAuthenticatedUser } from '@/lib/auth';
-import { Prisma } from '@prisma/client';
 
 // GET /api/v1/sales - Get sales with filtering and pagination
 export async function GET(request: NextRequest) {
@@ -16,24 +17,41 @@ export async function GET(request: NextRequest) {
 
   try {
     const skip = (page - 1) * limit;
-    const where = {
-      status,
-      ...(startDate && { saleDate: { gte: new Date(startDate) } }),
-      ...(endDate && { saleDate: { lte: new Date(endDate) } }),
-      ...(sellerId && { sellerId: parseInt(sellerId, 10) }),
-    } as Prisma.saleWhereInput;
+    
+    // Build where conditions
+    const conditions: SQL[] = [eq(sales.status, status as 'PENDING' | 'CONCLUDED' | 'CANCELLED')];
+    
+    if (startDate) {
+      conditions.push(gte(sales.saleDate, new Date(startDate)));
+    }
+    
+    if (endDate) {
+      conditions.push(lte(sales.saleDate, new Date(endDate)));
+    }
+    
+    if (sellerId) {
+      conditions.push(eq(sales.sellerId, parseInt(sellerId, 10)));
+    }
 
-    const sales = await prisma.sale.findMany({
-      where,
-      include: { seller: true, saleProducts: true },
-      skip,
-      take: limit,
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+    const salesData = await db.query.sales.findMany({
+      where: whereClause,
+      with: {
+        seller: true,
+        saleProducts: true,
+      },
+      limit,
+      offset: skip,
     });
 
-    const totalSales = await prisma.sale.count({ where });
+    const [{ count: totalSales }] = await db
+      .select({ count: count() })
+      .from(sales)
+      .where(whereClause);
 
     return NextResponse.json({
-      sales,
+      sales: salesData,
       pagination: {
         total: totalSales,
         page,
@@ -54,16 +72,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = getAuthenticatedUser(request);
   try {
-    const newSale = await prisma.sale.create({
-      data: {
+    const [newSale] = await db
+      .insert(sales)
+      .values({
+        id: crypto.randomUUID(),
         sellerId: user.id,
         status: 'PENDING',
         total: 0,
         amountReceived: 0,
         paymentMethod: 'CASH',
         change: 0,
-      },
-    });
+      })
+      .returning();
 
     return NextResponse.json(newSale, { status: 201 });
   } catch (error) {

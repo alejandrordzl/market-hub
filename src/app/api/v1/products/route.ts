@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/utils/prisma';
+import db from '@/db';
+import { products } from '@/db/schema';
+import { eq, count, desc } from 'drizzle-orm';
 import { getAuthenticatedUser } from '@/lib/auth';
 
 // GET /api/v1/products - Get products with pagination
@@ -16,19 +18,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const products = await prisma.product.findMany({
-      skip: (page - 1) * limit,
-      take: limit,
-      where: { active: 'ACTIVE' },
-      orderBy: { createdAt: 'desc' },
-    });
+    const productList = await db
+      .select()
+      .from(products)
+      .where(eq(products.active, 'ACTIVE'))
+      .orderBy(desc(products.createdAt))
+      .limit(limit)
+      .offset((page - 1) * limit);
 
-    const totalProducts = await prisma.product.count({
-      where: { active: 'ACTIVE' },
-    });
+    const [{ count: totalProducts }] = await db
+      .select({ count: count() })
+      .from(products)
+      .where(eq(products.active, 'ACTIVE'));
 
     return NextResponse.json({
-      data: products,
+      data: productList,
       meta: {
         total: totalProducts,
         page,
@@ -60,15 +64,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newProduct = await prisma.product.create({
-      data: {
+    const [newProduct] = await db
+      .insert(products)
+      .values({
         name,
         barCode,
         price,
         createdBy: user.id,
         updatedBy: user.id,
-      },
-    });
+      })
+      .returning();
 
     return NextResponse.json(newProduct, { status: 201 });
   } catch (error) {
