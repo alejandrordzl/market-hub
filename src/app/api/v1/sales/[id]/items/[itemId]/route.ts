@@ -30,7 +30,7 @@ export async function PUT(
       where: { id: itemId },
       include: { product: true },
     });
-    const isAdding = quantity > saleProduct?.quantity!;
+    
     if (!saleProduct) {
       return NextResponse.json(
         { error: 'Sale item not found' },
@@ -44,6 +44,7 @@ export async function PUT(
           ...(quantity && { quantity }),
         },
       });
+      const isAdding = quantity > (saleProduct?.quantity || 0);
       if(isAdding) {
         await tx.sale.update({
           where: { id },
