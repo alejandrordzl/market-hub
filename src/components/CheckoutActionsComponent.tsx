@@ -1,7 +1,14 @@
 "use client";
 import { useSale } from "@/hooks/sales";
 import Modal from "./Modal";
-import { Dispatch, SetStateAction, useRef, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 interface CheckoutActionsComponentProps {
   saleId: string;
@@ -22,34 +29,24 @@ export function CheckoutActionsComponent({
   setInitialSale,
 }: CheckoutActionsComponentProps) {
   const { data } = useSale(saleId);
-  const [change, setChange] = useState<number>(0);
+  const [amountReceived, setAmountReceived] = useState<number>(0);
   const amountReceivedRef = useRef<HTMLInputElement>(null);
-  function handleAmountReceived(event: React.KeyboardEvent<HTMLInputElement>) {
-    const amountReceived = parseFloat(amountReceivedRef.current?.value || "0");
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleConfirmPayment();
-      return;
-    }
 
-    if (isNaN(amountReceived)) {
-      // Handle invalid input
-      return;
-    }
-    const change = amountReceived - (data?.total || 0);
-    if (change >= 0) {
-      setChange(change);
-    } else {
-      setChange(0);
-    }
-  }
+  const total = useMemo(() => {
+    return data?.total || 0;
+  }, [data?.total]);
 
-  async function handleConfirmPayment() {
+  const isAmountValid = useMemo(() => {
+    return amountReceived >= total;
+  }, [total, amountReceived]);
+
+  const change = useMemo(() => {
+    return isAmountValid ? amountReceived - total : 0;
+  }, [isAmountValid, amountReceived, total]);
+
+  const handleConfirmPayment = useCallback(async () => {
     try {
-      const amountReceived = parseFloat(
-        amountReceivedRef.current?.value || "0"
-      );
-      if (amountReceived < (data?.total || 0)) {
+      if (!isAmountValid) {
         console.log(
           "Amount received is less than total, cannot confirm payment"
         );
@@ -71,11 +68,7 @@ export function CheckoutActionsComponent({
 
       if (response.ok) {
         setIsModalOpen(false);
-        // Optionally reset change and amount received
-        setChange(0);
-        if (amountReceivedRef.current) {
-          amountReceivedRef.current.value = "";
-        }
+        setAmountReceived(0);
         const newSale = await createInitialSale();
         setInitialSale({ id: newSale?.id || "" });
       } else {
@@ -84,8 +77,26 @@ export function CheckoutActionsComponent({
     } catch (error) {
       console.error("Error confirming payment:", error);
     }
-  }
+  }, [
+    amountReceived,
+    change,
+    createInitialSale,
+    isAmountValid,
+    saleId,
+    setAmountReceived,
+    setInitialSale,
+    setIsModalOpen,
+  ]);
 
+  const handleOnKeyUp = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleConfirmPayment();
+      }
+    },
+    [handleConfirmPayment]
+  );
   return (
     <section className="flex flex-col gap-4 md:gap-8 w-full md:w-[20%] p-2">
       <RecargasButton />
@@ -109,31 +120,54 @@ export function CheckoutActionsComponent({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       >
-        <h4 className="text-lg font-semibold">Total</h4>
-        <span className="text-xl">${data?.total?.toFixed(2)}</span>
-        <h4 className="text-lg font-semibold">Cantidad Recibida</h4>
-        <div>
-          <span className="pr-1">$</span>
-          <input
-            className="pl-1 border-b border-gray-400 focus:outline-none w-32 text-xl"
-            disabled={isNaN(change) || !data?.total}
-            type="number"
-            placeholder="0.00"
-            onKeyUp={handleAmountReceived}
-            ref={amountReceivedRef}
-          />
-        </div>
+        <section className="flex flex-col gap-4">
+          <div>
+            <h4 className="text-lg font-semibold">Total</h4>
+            <span className="text-xl">${data?.total?.toFixed(2)}</span>
+          </div>
+          <div>
+            <h4 className="text-lg font-semibold">Cantidad Recibida</h4>
+            <div>
+              <span className="pr-1">$</span>
+              <input
+                className="pl-1 border-b border-gray-400 focus:outline-none w-32 text-xl"
+                type="number"
+                placeholder="0.00"
+                defaultValue={amountReceived || ""}
+                onKeyUp={handleOnKeyUp}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (isNaN(value)) setAmountReceived(0);
+                  else setAmountReceived(value);
+                }}
+                ref={amountReceivedRef}
+              />
+            </div>
+          </div>
 
-        <h4 className="text-lg font-semibold">Cambio</h4>
-        <span className="text-xl">${change.toFixed(2)}</span>
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={() => handleConfirmPayment()}
-            className="bg-green-500 text-white p-2 rounded-md"
-          >
-            Confirmar
-          </button>
-        </div>
+          {isAmountValid ? (
+            <div>
+              <h4 className="text-lg font-semibold">Cambio</h4>
+              <span className="text-xl">${change.toFixed(2)}</span>
+            </div>
+          ) : (
+            <div>
+              <h4 className="text-lg font-semibold">Faltante</h4>
+              <span className="text-xl text-red-500">
+                ${(total - amountReceived).toFixed(2)}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-end mt-4">
+            <button
+              disabled={!isAmountValid}
+              onClick={() => handleConfirmPayment()}
+              className="bg-green-500 text-white p-2 rounded-md hover:cursor-pointer disabled:hover:cursor-default disabled:bg-red-500 disabled:opacity-50"
+            >
+              {isAmountValid ? "Confirmar Pago" : "Cantidad Insuficiente"}
+            </button>
+          </div>
+        </section>
       </Modal>
     </section>
   );
