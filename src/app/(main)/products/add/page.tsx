@@ -27,14 +27,14 @@ export default function AddProductPage() {
 
     if (!formData.name.trim()) {
       errors.name = "El nombre es obligatorio";
-    } else if (formData.name.trim().length < 2) {
-      errors.name = "El nombre debe tener al menos 2 caracteres";
+    } else if (formData.name.trim().length < 1) {
+      errors.name = "El nombre debe tener al menos 1 carácter";
     }
 
     if (!formData.barCode.trim()) {
       errors.barCode = "El código de barras es obligatorio";
-    } else if (formData.barCode.trim().length < 3) {
-      errors.barCode = "El código de barras debe tener al menos 3 caracteres";
+    } else if (formData.barCode.trim().length < 1) {
+      errors.barCode = "El código de barras debe tener al menos 1 carácter";
     }
 
     if (!formData.price.trim()) {
