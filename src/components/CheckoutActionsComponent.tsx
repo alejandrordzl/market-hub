@@ -118,7 +118,10 @@ export function CheckoutActionsComponent({
         }}
         title="Confirmar Pago"
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setAmountReceived(0);
+        }}
       >
         <section className="flex flex-col gap-4">
           <div>
