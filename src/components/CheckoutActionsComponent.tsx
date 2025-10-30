@@ -31,7 +31,7 @@ export function CheckoutActionsComponent({
   const { data } = useSale(saleId);
   const [amountReceived, setAmountReceived] = useState<number>(0);
   const amountReceivedRef = useRef<HTMLInputElement>(null);
-
+  const [isReadyToSubmit, setIsReadyToSubmit] = useState<boolean>(false);
   const total = useMemo(() => {
     return data?.total || 0;
   }, [data?.total]);
@@ -90,12 +90,23 @@ export function CheckoutActionsComponent({
 
   const handleOnKeyUp = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
+      event.preventDefault();
       if (event.key === "Enter") {
-        event.preventDefault();
-        handleConfirmPayment();
+        const value = parseFloat(amountReceivedRef.current?.value || "0");
+        setAmountReceived(isNaN(value) ? 0 : value);
+
+        if (isAmountValid) {
+          setIsReadyToSubmit(true);
+        }
+
+        if (isReadyToSubmit && isAmountValid) {
+          handleConfirmPayment();
+        }
+      } else {
+        setIsReadyToSubmit(false);
       }
     },
-    [handleConfirmPayment]
+    [handleConfirmPayment, isAmountValid, isReadyToSubmit]
   );
   return (
     <section className="flex flex-col gap-4 md:gap-8 w-full md:w-[20%] p-2">
@@ -138,11 +149,6 @@ export function CheckoutActionsComponent({
                 placeholder="0.00"
                 defaultValue={amountReceived || ""}
                 onKeyUp={handleOnKeyUp}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  if (isNaN(value)) setAmountReceived(0);
-                  else setAmountReceived(value);
-                }}
                 ref={amountReceivedRef}
               />
             </div>
