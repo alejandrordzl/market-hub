@@ -30,7 +30,10 @@ export async function POST(
     const [product, sale] = await Promise.all([
       prisma.product.findFirst({
         where: {
-          barCode: barCode.trim(),
+          barCode: {
+            equals: barCode.trim(),
+            mode: "insensitive",
+          },
           active: "ACTIVE",
         },
       }),
