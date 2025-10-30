@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/db";
-import { products, sales, saleProducts } from "@/db/schema";
+import { products } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 // POST /api/v1/sales/[id]/items/add - Add item to sale by barcode (Ultra-optimized version)
