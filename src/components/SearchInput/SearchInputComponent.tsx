@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useEffect } from "react";
-import { searchProduct } from "@/clients";
+import { searchProduct } from "./formActions";
 import { useCheckoutModalStore, useSalesStore } from "@/state";
 
 export const SearchInputComponent = () => {

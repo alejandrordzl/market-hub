@@ -1,6 +1,6 @@
 'use server';
 import { Product } from "@/utils/types";
-import { getCachedProductByBarcode } from "./cache";
+import { getCachedProductByBarcode } from "@/clients";
 
 interface productSearchFormData {
   product?: Product;
