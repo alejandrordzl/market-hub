@@ -3,7 +3,7 @@ import { Role } from "@/utils/types";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthOptions, DefaultSession, DefaultUser } from "next-auth";
-import prisma from "@/utils/prisma";
+import { prisma } from "@/clients";
 import { DefaultJWT } from "next-auth/jwt";
 export interface AuthenticatedUser {
   id: number;
