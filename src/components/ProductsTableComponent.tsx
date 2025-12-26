@@ -40,10 +40,10 @@ export function ProductsTableComponent() {
             <tr key={item.id} className="border-b hover:bg-gray-100">
               <td className="px-4 md:px-6 py-2">{item.product?.barCode}</td>
               <td className="px-4 md:px-6 py-2">{item.product?.name}</td>
-              <td className="px-4 md:px-6 py-2">${item.unitPrice?.toFixed(2)}</td>
+              <td className="px-4 md:px-6 py-2">${item.product?.price?.toFixed(2)}</td>
               <td className="px-4 md:px-6 py-2">{item.quantity}</td>
               <td className="px-4 md:px-6 py-2">
-                ${((item.unitPrice || 0) * item.quantity).toFixed(2)}
+                ${((item.product?.price || 0) * item.quantity).toFixed(2)}
               </td>
               <td className="px-4 md:px-6 py-2 gap-3 flex items-center">
                 <button

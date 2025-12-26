@@ -1,6 +1,6 @@
 import { SearchInputComponent } from "@/components";
 import { ProductsTableComponent } from "@/components/ProductsTableComponent";
-import { CheckoutActionsComponent } from "@/components/CheckoutActionsComponent";
+import { CheckoutActionsComponent } from "@/components/CheckoutActions/CheckoutActionsComponent";
 
 export default function Home() {
   return (

@@ -1,93 +1,71 @@
 "use client";
 import { useCheckoutModalStore, useSalesStore } from "@/state";
-import Modal from "./Modal";
-import { useMemo, useRef, useState } from "react";
+import Modal from "../Modal";
+import { useCallback, useState } from "react";
+import { confirmPayment } from "./formActions";
+import { useSession } from "next-auth/react";
 
 export function CheckoutActionsComponent() {
-  const [amountReceived, setAmountReceived] = useState<number>(0);
-  const amountReceivedRef = useRef<HTMLInputElement>(null);
-  // const [isReadyToSubmit, setIsReadyToSubmit] = useState<boolean>(false);
-  const sales = useSalesStore((state) => state.sales);
+  const [isReadyToSubmit, setIsReadyToSubmit] = useState<boolean>(false);
+  const { data: session } = useSession();
+  // Use sales store
+  const saleStore = useSalesStore();
+  const { sales, total, paymentMethod, amountReceived, change } = saleStore;
+  const { setAmountReceived, setChange, clearSale } = saleStore;
+  // Use modal store
   const { isModalOpen, setModalOpen } = useCheckoutModalStore();
-  const total = useMemo(() => {
-    return sales.reduce(
-      (acc, item) => acc + (item.unitPrice || 0) * item.quantity,
-      0
-    );
-  }, [sales]);
 
-  const isAmountValid = useMemo(() => {
-    return amountReceived >= total;
-  }, [total, amountReceived]);
+  const handleConfirmPayment = useCallback(async () => {
+    try {
+      if (!isReadyToSubmit) {
+        return;
+      }
+      const userId = parseInt(session?.user?.id || "0");
+      const result = await confirmPayment(
+        userId,
+        amountReceived,
+        change,
+        paymentMethod,
+        total,
+        sales
+      );
 
-  const change = useMemo(() => {
-    return isAmountValid ? amountReceived - total : 0;
-  }, [isAmountValid, amountReceived, total]);
+      if (result.success) {
+        clearSale();
+        setModalOpen(false);
+        setIsReadyToSubmit(false);
+      } else {
+        console.error("Error confirming payment:", result.message);
+      }
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+    }
+  }, [amountReceived, isReadyToSubmit, change, paymentMethod, sales, session, total, clearSale, setModalOpen]);
 
-  // const handleConfirmPayment = useCallback(async () => {
-  //   try {
-  //     if (!isAmountValid) {
-  //       console.log(
-  //         "Amount received is less than total, cannot confirm payment"
-  //       );
-  //       return;
-  //     }
+  const handleOnKeyUp = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      event.preventDefault();
 
-  //     const response = await fetch(`/api/v1/sales/${saleId}`, {
-  //       method: "PUT",
-  //       credentials: "include",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         amountReceived,
-  //         change,
-  //         paymentMethod: "CASH",
-  //       }),
-  //     });
+      if (event.key === "Delete" || event.key === "Backspace") {
+        setIsReadyToSubmit(false);
+        setAmountReceived(0);
+        setChange(0);
+        return;
+      }
 
-  //     if (response.ok) {
-  //       setIsModalOpen(false);
-  //       setAmountReceived(0);
-  //       const newSale = await createInitialSale();
-  //       setInitialSale({ id: newSale?.id || "" });
-  //     } else {
-  //       console.error("Error confirming payment:", response.statusText);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error confirming payment:", error);
-  //   }
-  // }, [
-  //   amountReceived,
-  //   change,
-  //   createInitialSale,
-  //   isAmountValid,
-  //   saleId,
-  //   setAmountReceived,
-  //   setInitialSale,
-  //   setIsModalOpen,
-  // ]);
+      if (event.key === "Enter") {
+        const value = parseFloat(event.currentTarget.value || "0");
+        setAmountReceived(isNaN(value) ? 0 : value);
+        if (value >= total) {
+          setIsReadyToSubmit(true);
+          setChange(value - total);
+        }
+        handleConfirmPayment();
+      }
+    },
+    [handleConfirmPayment, total, setIsReadyToSubmit, setChange, setAmountReceived]
+  );
 
-  // const handleOnKeyUp = useCallback(
-  //   (event: React.KeyboardEvent<HTMLInputElement>) => {
-  //     event.preventDefault();
-  //     if (event.key === "Enter") {
-  //       const value = parseFloat(amountReceivedRef.current?.value || "0");
-  //       setAmountReceived(isNaN(value) ? 0 : value);
-
-  //       if (isAmountValid) {
-  //         setIsReadyToSubmit(true);
-  //       }
-
-  //       if (isReadyToSubmit && isAmountValid) {
-  //         handleConfirmPayment();
-  //       }
-  //     } else {
-  //       setIsReadyToSubmit(false);
-  //     }
-  //   },
-  //   [handleConfirmPayment, isAmountValid, isReadyToSubmit]
-  // );
   return (
     <section className="flex flex-col gap-4 md:gap-8 w-full md:w-[20%] p-2">
       <RecargasButton />
@@ -105,7 +83,7 @@ export function CheckoutActionsComponent() {
       </button>
       <Modal
         onOpen={() => {
-          amountReceivedRef.current?.focus();
+          window.document.getElementById("input-amount-received")?.focus();
         }}
         title="Confirmar Pago"
         isOpen={isModalOpen}
@@ -124,17 +102,17 @@ export function CheckoutActionsComponent() {
             <div>
               <span className="pr-1">$</span>
               <input
+                id="input-amount-received"
                 className="pl-1 border-b border-gray-400 focus:outline-none w-32 text-xl"
                 type="number"
                 placeholder="0.00"
                 defaultValue={amountReceived || ""}
-                // onKeyUp={handleOnKeyUp}
-                ref={amountReceivedRef}
+                onKeyUp={handleOnKeyUp}
               />
             </div>
           </div>
 
-          {isAmountValid ? (
+          {isReadyToSubmit ? (
             <div>
               <h4 className="text-lg font-semibold">Cambio</h4>
               <span className="text-xl">${change.toFixed(2)}</span>
@@ -149,11 +127,11 @@ export function CheckoutActionsComponent() {
           )}
           <div className="flex justify-end mt-4">
             <button
-              disabled={!isAmountValid}
+              disabled={!isReadyToSubmit}
               onClick={() => alert("Work in progress...")}
               className="bg-green-500 text-white p-2 rounded-md hover:cursor-pointer disabled:hover:cursor-default disabled:bg-red-500 disabled:opacity-50"
             >
-              {isAmountValid ? "Confirmar Pago" : "Cantidad Insuficiente"}
+              {isReadyToSubmit ? "Confirmar Pago" : "Cantidad Insuficiente"}
             </button>
           </div>
         </section>
