@@ -5,16 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Product } from '@/utils/types';
 import { getProducts } from './serverActions';
 
-interface ProductsResponse {
-  data: Product[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
 export default function ProductsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,31 +14,18 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchBarcode, setSearchBarcode] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [isSearching] = useState(false);
   const [totalProducts, setTotalProducts] = useState(0);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const limit = 10;
 
-  const fetchProducts = useCallback(async (page: number, barcode?: string) => {
+  const fetchProducts = useCallback(async (page: number) => {
     try {
       setLoading(true);
       setError(null);
-      
-      // let url: string;
-      // if (barcode && barcode.trim()) {
-      //   url = `/api/v1/products/code/${encodeURIComponent(barcode.trim())}?page=${page}&limit=${limit}`;
-      //   setIsSearching(true);
-      // } else {
-      //   url = `/api/v1/products?page=${page}&limit=${limit}`;
-      //   setIsSearching(false);
-      // }
-
-      // const response = await fetch(url, {
-      //   credentials: 'include',
-      // });
       const response = await getProducts(page, limit);
 
-      if (response.status === 404 && barcode) {
+      if (response.status === 404) {
         // Product not found by barcode
         setProducts([]);
         setTotalPages(0);
@@ -70,6 +47,7 @@ export default function ProductsPage() {
       setProducts([]);
     } finally {
       setLoading(false);
+
     }
   }, [limit]);
 
@@ -103,7 +81,7 @@ export default function ProductsPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchProducts(1, searchBarcode);
+    fetchProducts(1);
   };
 
   const handleClearSearch = () => {
@@ -114,7 +92,7 @@ export default function ProductsPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    fetchProducts(page, isSearching ? searchBarcode : undefined);
+    fetchProducts(page);
   };
 
   const handleEditProduct = (productId: string) => {
@@ -165,15 +143,13 @@ export default function ProductsPage() {
               >
                 {loading ? 'Buscando...' : 'Buscar'}
               </button>
-              {isSearching && (
-                <button
+              <button
                   type="button"
                   onClick={handleClearSearch}
                   className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                 >
                   Limpiar
                 </button>
-              )}
             </div>
           </form>
         </div>
