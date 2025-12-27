@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Product } from '@/utils/types';
+import { getProducts } from './serverActions';
 
 interface ProductsResponse {
   data: Product[];
@@ -33,18 +34,19 @@ export default function ProductsPage() {
       setLoading(true);
       setError(null);
       
-      let url: string;
-      if (barcode && barcode.trim()) {
-        url = `/api/v1/products/code/${encodeURIComponent(barcode.trim())}?page=${page}&limit=${limit}`;
-        setIsSearching(true);
-      } else {
-        url = `/api/v1/products?page=${page}&limit=${limit}`;
-        setIsSearching(false);
-      }
+      // let url: string;
+      // if (barcode && barcode.trim()) {
+      //   url = `/api/v1/products/code/${encodeURIComponent(barcode.trim())}?page=${page}&limit=${limit}`;
+      //   setIsSearching(true);
+      // } else {
+      //   url = `/api/v1/products?page=${page}&limit=${limit}`;
+      //   setIsSearching(false);
+      // }
 
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
+      // const response = await fetch(url, {
+      //   credentials: 'include',
+      // });
+      const response = await getProducts(page, limit);
 
       if (response.status === 404 && barcode) {
         // Product not found by barcode
@@ -55,15 +57,14 @@ export default function ProductsPage() {
         return;
       }
 
-      if (!response.ok) {
-        throw new Error('Error al cargar los productos');
+      if (response.status !== 200) {
+        throw new Error(`Error fetching products: ${response.error}`);
       }
 
-      const data: ProductsResponse = await response.json();
-      setProducts(data.data);
-      setCurrentPage(data.meta.page);
-      setTotalPages(data.meta.totalPages);
-      setTotalProducts(data.meta.total);
+      setProducts(response.products || []);
+      setCurrentPage(response.pagination?.page || 1);
+      setTotalPages(response.pagination?.totalPages || 1);
+      setTotalProducts(response.pagination?.totalItems || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
       setProducts([]);

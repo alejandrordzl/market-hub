@@ -1,6 +1,6 @@
 'use server';
+import { getProductByBarcode } from "@/clients";
 import { Product } from "@/utils/types";
-import { getCachedProductByBarcode } from "@/clients";
 
 interface productSearchFormData {
   product?: Product;
@@ -17,7 +17,7 @@ export async function searchProduct(
     if (barCode === "" || !barCode) {
       return { status: "use_callback", callbackActions: "start_sale" };
     }
-    const product = await getCachedProductByBarcode(barCode);
+    const product = await getProductByBarcode(barCode);
     if (product) {
       return { product, status: "found" };
     } else {
