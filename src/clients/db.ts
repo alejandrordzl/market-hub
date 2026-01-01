@@ -1,6 +1,6 @@
 import prisma from "@/clients/prisma";
 import { PaymentMethod, Product, Sale, SaleItem } from "@/utils/types";
-import { unstable_cache } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 
 export async function getProductByBarcode(
   barCode: string
@@ -122,7 +122,7 @@ export async function createSale(total: number, amountReceived: number, change: 
 }
 
 export async function createNewProduct(barCode: string, name: string, price: number, userId: number): Promise<Product> {
-  return await prisma.product.create({
+  const newProduct = await prisma.product.create({
     data: {
       barCode,
       name,
@@ -131,10 +131,14 @@ export async function createNewProduct(barCode: string, name: string, price: num
       updatedByUser: { connect: { id: userId } },
     },
   });
+  revalidateTag(`product-barcode-${barCode}`);
+  revalidateTag(`product-id-${newProduct.id}`);
+  revalidateTag(`products-total-count`);
+  return newProduct;
 }
 
 export async function updateProduct(id: string, barCode: string, name: string, price: number, userId: number): Promise<Product> {
-  return await prisma.product.update({
+  const res = await prisma.product.update({
     where: { id },
     data: {
       barCode,
@@ -143,4 +147,7 @@ export async function updateProduct(id: string, barCode: string, name: string, p
       updatedByUser: { connect: { id: userId } },
     },
   });
+  revalidateTag(`product-barcode-${barCode}`);
+  revalidateTag(`product-id-${id}`);
+  return res;
 }
