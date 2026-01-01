@@ -1,6 +1,6 @@
 "use server";
 
-import { getPaginatedProducts, getTotalProductCount } from "@/clients";
+import { getPaginatedProducts, getProductByBarcode, getTotalProductCount } from "@/clients";
 import { Product } from "@/utils/types";
 
 export async function getProducts(
@@ -34,6 +34,32 @@ export async function getProducts(
     };
   } catch (error) {
     console.error("Error fetching products:", error);
+    return {
+        status: 500,
+        error: error instanceof Error ? error.message : "Error desconocido"
+    };
+  }
+}
+
+export async function getProductByBarcodeAction(barCode: string): Promise<{
+    status: number;
+    error?: string;
+    product?: Product;
+}> {
+  try {
+    const product = await getProductByBarcode(barCode.trim());
+    if (!product) {
+      return {
+        status: 404,
+        error: "Producto no encontrado"
+      };
+    }
+    return {
+      status: 200,
+      product
+    };
+  } catch (error) {
+    console.error("Error fetching product by barcode:", error);
     return {
         status: 500,
         error: error instanceof Error ? error.message : "Error desconocido"

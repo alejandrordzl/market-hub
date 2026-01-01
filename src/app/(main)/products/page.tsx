@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Product } from '@/utils/types';
-import { getProducts } from './serverActions';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Product } from "@/utils/types";
+import { getProductByBarcodeAction, getProducts } from "./serverActions";
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -13,64 +13,66 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [searchBarcode, setSearchBarcode] = useState('');
+  const [searchBarcode, setSearchBarcode] = useState("");
   const [isSearching] = useState(false);
   const [totalProducts, setTotalProducts] = useState(0);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const limit = 10;
 
-  const fetchProducts = useCallback(async (page: number) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getProducts(page, limit);
+  const fetchProducts = useCallback(
+    async (page: number) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getProducts(page, limit);
 
-      if (response.status === 404) {
-        // Product not found by barcode
+        if (response.status === 404) {
+          // Product not found by barcode
+          setProducts([]);
+          setTotalPages(0);
+          setTotalProducts(0);
+          setError("No se encontraron productos con ese código de barras");
+          return;
+        }
+
+        if (response.status !== 200) {
+          throw new Error(`Error fetching products: ${response.error}`);
+        }
+
+        setProducts(response.products || []);
+        setCurrentPage(response.pagination?.page || 1);
+        setTotalPages(response.pagination?.totalPages || 1);
+        setTotalProducts(response.pagination?.totalItems || 0);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error desconocido");
         setProducts([]);
-        setTotalPages(0);
-        setTotalProducts(0);
-        setError('No se encontraron productos con ese código de barras');
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      if (response.status !== 200) {
-        throw new Error(`Error fetching products: ${response.error}`);
-      }
-
-      setProducts(response.products || []);
-      setCurrentPage(response.pagination?.page || 1);
-      setTotalPages(response.pagination?.totalPages || 1);
-      setTotalProducts(response.pagination?.totalItems || 0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      setProducts([]);
-    } finally {
-      setLoading(false);
-
-    }
-  }, [limit]);
+    },
+    [limit]
+  );
 
   useEffect(() => {
     fetchProducts(1);
-    
+
     // Check for success message
-    if (searchParams.get('updated') === 'true') {
+    if (searchParams.get("updated") === "true") {
       setShowSuccessMessage(true);
       // Remove the parameter from URL
-      router.replace('/products', { scroll: false });
-      
+      router.replace("/products", { scroll: false });
+
       // Hide success message after 5 seconds
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 5000);
     }
-    
-    if (searchParams.get('created') === 'true') {
+
+    if (searchParams.get("created") === "true") {
       setShowSuccessMessage(true);
       // Remove the parameter from URL
-      router.replace('/products', { scroll: false });
-      
+      router.replace("/products", { scroll: false });
+
       // Hide success message after 5 seconds
       setTimeout(() => {
         setShowSuccessMessage(false);
@@ -78,14 +80,36 @@ export default function ProductsPage() {
     }
   }, [fetchProducts, searchParams, router]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    fetchProducts(1);
+  const handleSearch = async (e: React.FormEvent) => {
+    try {
+      e.preventDefault();
+      if(!searchBarcode.trim()) {
+        fetchProducts(1);
+        return;
+      }
+      setCurrentPage(1);
+      const product = await getProductByBarcodeAction(searchBarcode);
+      if (product.status === 200 && product.product) {
+        setProducts([product.product]);
+        setTotalPages(1);
+        setTotalProducts(1);
+        setError(null);
+      } else if (product.status === 404) {
+        setProducts([]);
+        setTotalPages(0);
+        setTotalProducts(0);
+        setError("No se encontraron productos con ese código de barras");
+      } else {
+        throw new Error(product.error || "Error desconocido");
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Error desconocido");
+      setProducts([]);
+    }
   };
 
   const handleClearSearch = () => {
-    setSearchBarcode('');
+    setSearchBarcode("");
     setCurrentPage(1);
     fetchProducts(1);
   };
@@ -100,18 +124,18 @@ export default function ProductsPage() {
   };
 
   const formatDate = (date: Date | null) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatPrice = (price: number | null) => {
-    if (price === null) return 'N/A';
+    if (price === null) return "N/A";
     return `$${price.toFixed(2)}`;
   };
 
@@ -120,11 +144,14 @@ export default function ProductsPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
         <h1 className="text-2xl md:text-4xl p-2 md:p-4">Productos</h1>
       </div>
-      
+
       <div className="bg-gray-200 rounded-lg p-2 md:p-4">
         {/* Search Section */}
         <div className="mb-4 bg-white p-4 rounded-lg">
-          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-2">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col md:flex-row gap-2"
+          >
             <div className="flex-1">
               <input
                 type="text"
@@ -141,15 +168,15 @@ export default function ProductsPage() {
                 disabled={loading}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[80px]"
               >
-                {loading ? 'Buscando...' : 'Buscar'}
+                {loading ? "Buscando..." : "Buscar"}
               </button>
               <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-                >
-                  Limpiar
-                </button>
+                type="button"
+                onClick={handleClearSearch}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+              >
+                Limpiar
+              </button>
             </div>
           </form>
         </div>
@@ -158,7 +185,10 @@ export default function ProductsPage() {
         {showSuccessMessage && (
           <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center justify-between">
             <span>
-              ✅ {searchParams.get('created') === 'true' ? 'Producto creado correctamente' : 'Producto actualizado correctamente'}
+              ✅{" "}
+              {searchParams.get("created") === "true"
+                ? "Producto creado correctamente"
+                : "Producto actualizado correctamente"}
             </span>
             <button
               onClick={() => setShowSuccessMessage(false)}
@@ -172,12 +202,17 @@ export default function ProductsPage() {
         {/* Status Information */}
         <div className="mb-4 text-sm text-gray-600">
           {isSearching ? (
-            <p>Buscando productos con código de barras: <strong>{searchBarcode}</strong></p>
+            <p>
+              Buscando productos con código de barras:{" "}
+              <strong>{searchBarcode}</strong>
+            </p>
           ) : (
             <p>Mostrando todos los productos activos</p>
           )}
           {!loading && (
-            <p>Total de productos: <strong>{totalProducts}</strong></p>
+            <p>
+              Total de productos: <strong>{totalProducts}</strong>
+            </p>
           )}
         </div>
 
@@ -203,19 +238,33 @@ export default function ProductsPage() {
               <table className="min-w-full text-sm md:text-base">
                 <thead className="bg-blue-500 text-white">
                   <tr>
-                    <th className="px-4 md:px-6 py-3 text-left font-bold">Código de Barras</th>
-                    <th className="px-4 md:px-6 py-3 text-left font-bold">Nombre</th>
-                    <th className="px-4 md:px-6 py-3 text-left font-bold">Precio</th>
-                    <th className="px-4 md:px-6 py-3 text-left font-bold">Fecha de Creación</th>
-                    <th className="px-4 md:px-6 py-3 text-left font-bold">Última Actualización</th>
-                    <th className="px-4 md:px-6 py-3 text-center font-bold">Acciones</th>
+                    <th className="px-4 md:px-6 py-3 text-left font-bold">
+                      Código de Barras
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left font-bold">
+                      Nombre
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left font-bold">
+                      Precio
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left font-bold">
+                      Fecha de Creación
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left font-bold">
+                      Última Actualización
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-center font-bold">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {products.map((product, index) => (
-                    <tr 
-                      key={product.id} 
-                      className={`border-b hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}
+                    <tr
+                      key={product.id}
+                      className={`border-b hover:bg-gray-50 ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                      }`}
                     >
                       <td className="px-4 md:px-6 py-3 font-mono text-sm">
                         {product.barCode}
@@ -238,17 +287,17 @@ export default function ProductsPage() {
                           className="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
                           title="Editar producto"
                         >
-                          <svg 
-                            className="w-4 h-4 mr-1" 
-                            fill="none" 
-                            stroke="currentColor" 
+                          <svg
+                            className="w-4 h-4 mr-1"
+                            fill="none"
+                            stroke="currentColor"
                             viewBox="0 0 24 24"
                           >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                             />
                           </svg>
                           Editar
@@ -267,13 +316,14 @@ export default function ProductsPage() {
           <div className="text-center p-8 bg-white rounded-lg">
             <div className="text-gray-400 text-6xl mb-4">📦</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {isSearching ? 'No se encontraron productos' : 'No hay productos disponibles'}
+              {isSearching
+                ? "No se encontraron productos"
+                : "No hay productos disponibles"}
             </h3>
             <p className="text-gray-600">
-              {isSearching 
+              {isSearching
                 ? `No hay productos que coincidan con el código de barras "${searchBarcode}"`
-                : 'No hay productos registrados en el sistema'
-              }
+                : "No hay productos registrados en el sistema"}
             </p>
             {isSearching && (
               <button
@@ -292,7 +342,7 @@ export default function ProductsPage() {
             <div className="text-sm text-gray-600">
               Página {currentPage} de {totalPages}
             </div>
-            
+
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handlePageChange(1)}
@@ -301,7 +351,7 @@ export default function ProductsPage() {
               >
                 Primera
               </button>
-              
+
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1 || loading}
@@ -323,7 +373,7 @@ export default function ProductsPage() {
                   } else {
                     page = currentPage - 2 + i;
                   }
-                  
+
                   return (
                     <button
                       key={page}
@@ -331,8 +381,8 @@ export default function ProductsPage() {
                       disabled={loading}
                       className={`px-3 py-1 text-sm rounded ${
                         currentPage === page
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {page}
@@ -348,7 +398,7 @@ export default function ProductsPage() {
               >
                 Siguiente
               </button>
-              
+
               <button
                 onClick={() => handlePageChange(totalPages)}
                 disabled={currentPage === totalPages || loading}
