@@ -38,14 +38,13 @@ export type Sale = {
     change: number;
     saleDate: Date;
     status: SaleStatus;
-    saleProducts: SaleItem[];
+    saleProducts?: SaleItem[];
 };
 export type SaleItem = {
     id: string;
     saleId: string;
     productId: string;
     quantity: number;
-    unitPrice: number | null;
     product?: Product;
 };
 export const Role = {
