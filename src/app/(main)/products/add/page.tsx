@@ -1,110 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { addProductAction } from "./serverActions";
 
 export default function AddProductPage() {
   const router = useRouter();
+  const { data: session } = useSession();
 
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: "",
-    barCode: "",
-    price: "",
+  const [addState, formAction] = useActionState(addProductAction, {
+    status: "idle",
   });
 
-  const [validationErrors, setValidationErrors] = useState<{
-    name?: string;
-    barCode?: string;
-    price?: string;
-  }>({});
-
-  const validateForm = () => {
-    const errors: typeof validationErrors = {};
-
-    if (!formData.name.trim()) {
-      errors.name = "El nombre es obligatorio";
-    } else if (formData.name.trim().length < 1) {
-      errors.name = "El nombre debe tener al menos 1 carácter";
-    }
-
-    if (!formData.barCode.trim()) {
-      errors.barCode = "El código de barras es obligatorio";
-    } else if (formData.barCode.trim().length < 1) {
-      errors.barCode = "El código de barras debe tener al menos 1 carácter";
-    }
-
-    if (!formData.price.trim()) {
-      errors.price = "El precio es obligatorio";
-    } else {
-      const price = parseFloat(formData.price);
-      if (isNaN(price) || price < 0) {
-        errors.price = "El precio debe ser un número válido mayor o igual a 0";
-      }
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError(null);
-
-      const response = await fetch("/api/v1/products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          barCode: formData.barCode.trim(),
-          price: parseFloat(formData.price),
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al crear el producto");
-      }
-
-      // Redirect back to products list with success message
+  // Handle action state changes
+  useEffect(() => {
+    if (addState.status === "success") {
       router.push("/products?created=true");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
-    } finally {
-      setSaving(false);
     }
-  };
-
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-
-    // Clear validation error when user starts typing
-    if (validationErrors[field]) {
-      setValidationErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
+  }, [addState, router]);
 
   const handleCancel = () => {
-    router.push("/products");
-  };
-
-  const handleReset = () => {
-    setFormData({ name: "", barCode: "", price: "" });
-    setValidationErrors({});
-    setError(null);
+    router.back();
   };
 
   return (
@@ -116,9 +33,9 @@ export default function AddProductPage() {
 
       <div className="bg-gray-200 rounded-lg p-2 md:p-4">
         {/* Error Message */}
-        {error && (
+        {addState.status === "error" && addState.error && (
           <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            {error}
+            {addState.error}
           </div>
         )}
 
@@ -128,7 +45,14 @@ export default function AddProductPage() {
             Información del Nuevo Producto
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form action={formAction} className="space-y-4">
+            {/* Hidden user ID */}
+            <input
+              type="hidden"
+              name="userId"
+              value={session?.user?.id || ""}
+            />
+
             {/* Product Name */}
             <div>
               <label
@@ -140,20 +64,12 @@ export default function AddProductPage() {
               <input
                 type="text"
                 id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  validationErrors.name ? "border-red-500" : "border-gray-300"
-                }`}
+                name="name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ingrese el nombre del producto"
-                disabled={saving}
+                required
                 autoFocus
               />
-              {validationErrors.name && (
-                <p className="mt-1 text-sm text-red-600">
-                  {validationErrors.name}
-                </p>
-              )}
             </div>
 
             {/* Barcode */}
@@ -167,21 +83,11 @@ export default function AddProductPage() {
               <input
                 type="text"
                 id="barCode"
-                value={formData.barCode}
-                onChange={(e) => handleInputChange("barCode", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono ${
-                  validationErrors.barCode
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
+                name="barCode"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                 placeholder="Ingrese el código de barras"
-                disabled={saving}
+                required
               />
-              {validationErrors.barCode && (
-                <p className="mt-1 text-sm text-red-600">
-                  {validationErrors.barCode}
-                </p>
-              )}
             </div>
 
             {/* Price */}
@@ -197,63 +103,41 @@ export default function AddProductPage() {
                 <input
                   type="number"
                   id="price"
+                  name="price"
                   step="0.01"
                   min="0"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange("price", e.target.value)}
-                  className={`w-full pl-8 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    validationErrors.price
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
-                  disabled={saving}
+                  required
                 />
               </div>
-              {validationErrors.price && (
-                <p className="mt-1 text-sm text-red-600">
-                  {validationErrors.price}
-                </p>
-              )}
             </div>
 
             {/* Form Actions */}
             <div className="flex flex-col md:flex-row gap-3 pt-4 border-t">
               <button
                 type="submit"
-                disabled={saving}
                 className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
               >
-                {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creando...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                    Crear Producto
-                  </>
-                )}
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Crear Producto
               </button>
 
               <button
-                type="button"
-                onClick={handleReset}
-                disabled={saving}
-                className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                type="reset"
+                className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center justify-center"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -274,8 +158,7 @@ export default function AddProductPage() {
               <button
                 type="button"
                 onClick={handleCancel}
-                disabled={saving}
-                className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
               >
                 Cancelar
               </button>
