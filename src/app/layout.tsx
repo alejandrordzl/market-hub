@@ -4,7 +4,7 @@ import "../globals.css";
 import { AuthProvider } from "@/providers/auth";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-
+import { Analytics } from "@vercel/analytics/next"
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -33,6 +33,7 @@ export default async function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider session={session}>{children}</AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
