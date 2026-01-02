@@ -9,7 +9,7 @@ export function ProductsTableComponent() {
     reduceItemFromSale,
     removeItemFromSale,
   } = useSalesStore();
-
+  console.log
   return (
     <section className="p-2 overflow-x-auto">
       <table className="min-w-full text-sm md:text-md text-left text-gray-800">

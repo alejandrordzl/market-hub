@@ -42,7 +42,7 @@ export const useSalesStore = create<SalesStore>((set) => ({
             // If it doesn't exist, add the new item
             // IDs are calculated by the database, so we can use a temporary placeholder
             const newSaleItem: SaleItem = {
-                id: '',
+                id: 'temp-' + Math.random().toString(36).substr(2, 9),
                 saleId: '',
                 productId: product.id,
                 quantity: 1,
@@ -60,7 +60,7 @@ export const useSalesStore = create<SalesStore>((set) => ({
             updatedSales[existingItemIndex].quantity += 1;
             return { sales: updatedSales, total: calculateTotal(updatedSales) };
         }
-        return { sales: state.sales };
+        return { sales: state.sales, total: calculateTotal(state.sales) };
     }),
     reduceItemFromSale: (itemId) => set((state) => {
         const existingItemIndex = state.sales.findIndex(saleItem => saleItem.id === itemId);
@@ -69,14 +69,14 @@ export const useSalesStore = create<SalesStore>((set) => ({
             if (updatedSales[existingItemIndex].quantity > 1) {
                 // Decrease quantity by 1
                 updatedSales[existingItemIndex].quantity -= 1;
-                return { sales: updatedSales };
+                return { sales: updatedSales, total: calculateTotal(updatedSales) };
             } else {
                 // Remove item if quantity is 1
                 updatedSales.splice(existingItemIndex, 1);
                 return { sales: updatedSales, total: calculateTotal(updatedSales) };
             }
         }
-        return { sales: state.sales };
+        return { sales: state.sales, total: calculateTotal(state.sales) };
     }),
     removeItemFromSale: (itemId) => set((state) => {
         const updatedSales = state.sales.filter(item => item.id !== itemId);
