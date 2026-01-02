@@ -128,7 +128,7 @@ export function CheckoutActionsComponent() {
           <div className="flex justify-end mt-4">
             <button
               disabled={!isReadyToSubmit}
-              onClick={() => alert("Work in progress...")}
+              onClick={() => handleConfirmPayment()}
               className="bg-green-500 text-white p-2 rounded-md hover:cursor-pointer disabled:hover:cursor-default disabled:bg-red-500 disabled:opacity-50"
             >
               {isReadyToSubmit ? "Confirmar Pago" : "Cantidad Insuficiente"}
