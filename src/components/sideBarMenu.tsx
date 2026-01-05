@@ -6,6 +6,7 @@ import { useState } from "react";
 export function SideBarMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
+  const [isSalesExpanded, setIsSalesExpanded] = useState(false);
   
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -14,7 +15,9 @@ export function SideBarMenu() {
   const toggleProducts = () => {
     setIsProductsExpanded(!isProductsExpanded);
   };
-
+  const toggleSales = () => {
+    setIsSalesExpanded(!isSalesExpanded);
+  }
   return (
     <div className="relative">
       {/* Hamburger Button */}
@@ -66,7 +69,7 @@ export function SideBarMenu() {
       <div
         className={`${
           isOpen ? "block" : "hidden"
-        } md:flex flex-col h-screen bg-gray-800 text-white w-full md:w-auto absolute md:static top-0 left-0 z-2`}
+        } md:flex flex-col h-screen bg-gray-800 text-white w-full md:w-70 absolute md:fixed top-0 left-0 z-40 md:z-50 overflow-y-auto`}
       >
         <div className="flex items-center justify-center p-4">
           <Link href="/">
@@ -163,21 +166,67 @@ export function SideBarMenu() {
               </Link>
             </div>
           </div>
-          {/* <Link
-            href="/sales"
-            className="py-2 px-2 md:px-4 hover:bg-gray-700 rounded text-lg md:text-xl"
-          >
-            <div className="flex items-center">
-              <Image
+
+          <div className="mb-2">
+            <button
+              onClick={toggleSales}
+              className="w-full py-2 px-2 md:px-4 hover:bg-gray-700 rounded text-lg md:text-xl flex items-center justify-between md:pointer-events-none"
+            >
+              <div className="flex items-center">
+                <Image
                 src="/sales.png"
                 alt="Sales"
                 width={20}
                 height={20}
                 className="inline-block mr-2"
               />
-              <span>Ventas</span>
+                <span>Ventas</span>
+              </div>
+              {/* Arrow icon - only visible on mobile */}
+              <svg
+                className={`w-5 h-5 transform transition-transform duration-200 md:hidden ${
+                  isSalesExpanded ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            
+            {/* Submenu - always visible on desktop, toggleable on mobile */}
+            <div className={`${isSalesExpanded ? 'block' : 'hidden'} md:block ml-4 mt-1`}>
+              <Link
+                href="/sales"
+                className="block py-1.5 px-3 text-sm md:text-base text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                onClick={() => setIsOpen(false)} // Close mobile menu when clicking submenu
+              >
+                <div className="flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                  Ver mis ventas
+                </div>
+              </Link>
+               
             </div>
-          </Link> */}
+          </div>
         </nav>
       </div>
     </div>

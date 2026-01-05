@@ -17,11 +17,11 @@ export default function AuthenticatedLayout({
   };
   const name = session?.user.name;
   return (
-    <div className="antialiased flex flex-col md:grid md:grid-cols-12 gap-4">
-      <div className="md:col-span-2">
+    <div className="antialiased flex flex-col md:flex-row">
+      <div className="md:w-70 md:flex-shrink-0">
         <SideBarMenu />
       </div>
-      <div className="md:col-span-10 px-4">{children}</div>
+      <div className="flex-1 px-4">{children}</div>
       <div className="absolute top-5 right-5 flex justify-center items-center flex-col">
         <Image
           onClick={logout}

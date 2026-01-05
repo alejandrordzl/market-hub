@@ -3,14 +3,18 @@ import { PaymentMethod, Product, Sale, SaleItem } from "@/utils/types";
 import { revalidateTag, unstable_cache } from "next/cache";
 
 export async function getProductByBarcode(
-  barCode: string
+  bc: string
 ): Promise<Product | undefined> {
+  const barCode = bc.trim().toLocaleLowerCase();
   const cachedFn = unstable_cache(
     async (barCode: string) => {
       try {
         console.warn(`Fetching product with barcode ${barCode} from database`);
         const product = await prisma.product.findFirst({
-          where: { barCode },
+          where: { barCode: {
+            mode: "insensitive",
+            equals: barCode
+          } },
         });
         if (!product) {
           return undefined;
@@ -150,4 +154,159 @@ export async function updateProduct(id: string, barCode: string, name: string, p
   revalidateTag(`product-barcode-${barCode}`);
   revalidateTag(`product-id-${id}`);
   return res;
+}
+
+export async function getPaginatedUserSales(
+  userId: number,
+  page: number,
+  pageSize: number,
+  rangeDateDays: number,
+): Promise<Sale[]> {
+  try {
+    console.warn(`Fetching sales for user ${userId}, page ${page} with page size ${pageSize} and date range of ${rangeDateDays} days`);
+    
+    // Calculate the date 3 days ago
+    const gteDate = new Date();
+    gteDate.setDate(gteDate.getDate() - rangeDateDays);
+    
+    const sales = await prisma.sale.findMany({
+      where: {
+        sellerId: userId,
+        saleDate: {
+          gte: gteDate,
+        },
+      },
+      include: {
+        saleProducts: {
+          include: {
+            product: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { saleDate: "desc" },
+    });
+    
+    return sales as Sale[];
+  } catch (error) {
+    console.error(`Error fetching sales for user ${userId}, page ${page}:`, error);
+    return [];
+  }
+}
+
+export async function getTotalUserSalesCount(userId: number, rangeDateDays: number): Promise<number> {
+  try {
+    console.warn(`Fetching total sales count for user ${userId} with date range of ${rangeDateDays} days`);
+    
+    // Calculate the date 3 days ago
+    const gteDate = new Date();
+    gteDate.setDate(gteDate.getDate() - rangeDateDays);
+    
+    const count = await prisma.sale.count({
+      where: {
+        sellerId: userId,
+        saleDate: {
+          gte: gteDate,
+        },
+      },
+    });
+    
+    return count;
+  } catch (error) {
+    console.error(`Error fetching total sales count for user ${userId}:`, error);
+    return 0;
+  }
+}
+
+export async function getSalesByProductId(
+  userId: number,
+  productId: string,
+  page: number,
+  pageSize: number,
+  rangeDateDays: number,
+): Promise<Sale[]> {
+  try {
+    console.warn(`Fetching sales for user ${userId} with product ${productId}, page ${page} with page size ${pageSize} and date range of ${rangeDateDays} days`);
+    
+    // Calculate the date 3 days ago
+    const gteDate = new Date();
+    gteDate.setDate(gteDate.getDate() - rangeDateDays);
+    
+    const sales = await prisma.sale.findMany({
+      where: {
+        sellerId: userId,
+        saleDate: {
+          gte: gteDate,
+        },
+        saleProducts: {
+          some: {
+            productId: productId,
+          },
+        },
+      },
+      include: {
+        saleProducts: {
+          include: {
+            product: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { saleDate: "desc" },
+    });
+    
+    return sales as Sale[];
+  } catch (error) {
+    console.error(`Error fetching sales by product for user ${userId}:`, error);
+    return [];
+  }
+}
+
+export async function getTotalUserSalesByProductCount(
+  userId: number,
+  productId: string,
+  rangeDateDays: number,
+): Promise<number> {
+  try {
+    console.warn(`Fetching total sales count for user ${userId} with product ${productId} and date range of ${rangeDateDays} days`);
+    
+    // Calculate the date 3 days ago
+    const gteDate = new Date();
+    gteDate.setDate(gteDate.getDate() - rangeDateDays);
+    
+    const count = await prisma.sale.count({
+      where: {
+        sellerId: userId,
+        saleDate: {
+          gte: gteDate,
+        },
+        saleProducts: {
+          some: {
+            productId: productId,
+          },
+        },
+      },
+    });
+    
+    return count;
+  } catch (error) {
+    console.error(`Error fetching total sales count by product for user ${userId}:`, error);
+    return 0;
+  }
 }
