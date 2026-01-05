@@ -3,14 +3,18 @@ import { PaymentMethod, Product, Sale, SaleItem } from "@/utils/types";
 import { revalidateTag, unstable_cache } from "next/cache";
 
 export async function getProductByBarcode(
-  barCode: string
+  bc: string
 ): Promise<Product | undefined> {
+  const barCode = bc.trim().toLocaleLowerCase();
   const cachedFn = unstable_cache(
     async (barCode: string) => {
       try {
         console.warn(`Fetching product with barcode ${barCode} from database`);
         const product = await prisma.product.findFirst({
-          where: { barCode },
+          where: { barCode: {
+            mode: "insensitive",
+            equals: barCode
+          } },
         });
         if (!product) {
           return undefined;
