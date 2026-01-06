@@ -4,6 +4,7 @@ import Modal from "../Modal";
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { confirmPaymentAction, ConfirmPaymentState } from "./formActions";
 import { useSession } from "next-auth/react";
+import { autofocusMainSearchInput } from "@/utils/autofocus";
 
 export function CheckoutActionsComponent() {
   const [isReadyToSubmit, setIsReadyToSubmit] = useState<boolean>(false);
@@ -29,9 +30,9 @@ export function CheckoutActionsComponent() {
       setIsReadyToSubmit(false);
       setAmountReceived(0);
       setChange(0);
+      autofocusMainSearchInput();
     }
-  }, [paymentState, clearSale, setModalOpen, setAmountReceived, setChange]);
-
+  }, [paymentState, clearSale, setModalOpen, setChange]);
 
   const handleOnKeyUp = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -82,7 +83,7 @@ export function CheckoutActionsComponent() {
         isOpen={isModalOpen}
         onClose={() => {
           setModalOpen(false);
-          setAmountReceived(0);
+          autofocusMainSearchInput();
         }}
       >
         <section className="flex flex-col gap-4">

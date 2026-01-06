@@ -2,6 +2,7 @@
 import { useActionState, useEffect } from "react";
 import { searchProduct } from "./formActions";
 import { useCheckoutModalStore, useSalesStore } from "@/state";
+import { autofocusMainSearchInput } from "@/utils/autofocus";
 
 export const SearchInputComponent = () => {
   const addItemToSale = useSalesStore((state) => state.addItemToSale);
@@ -10,10 +11,7 @@ export const SearchInputComponent = () => {
   useEffect(() => {
     if (isModalOpen) return;
     const autoFocusInterval = setInterval(() => {
-      const inputElement = document.getElementById(
-        "barCode"
-      ) as HTMLInputElement | null;
-      inputElement?.focus();
+      autofocusMainSearchInput();
     }, 10000);
     return () => clearInterval(autoFocusInterval);
   }, [isModalOpen]);
