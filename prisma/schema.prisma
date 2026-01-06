@@ -17,6 +17,7 @@ model user {
   createdAt       DateTime? @default(now())
   updatedAt       DateTime? @updatedAt
   active          Status?   @default(ACTIVE)
+  telegramId     String?
   products        product[] @relation("createdByUser")
   productsUpdated product[] @relation("updatedByUser")
   sales           sale[]    @relation("sellerSales")

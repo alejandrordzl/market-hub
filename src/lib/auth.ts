@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { Role } from "@/utils/types";
+import { Role, User } from "@/utils/types";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthOptions, DefaultSession, DefaultUser } from "next-auth";
-import { prisma } from "@/clients";
+import { prisma, sendLoginNotification, sendLogoutNotification } from "@/clients";
 import { DefaultJWT } from "next-auth/jwt";
 export interface AuthenticatedUser {
   id: number;
@@ -22,6 +22,7 @@ declare module "next-auth" {
   }
   interface User extends DefaultUser {
     role: Role;
+    userAgent?: string;
   }
 }
 
@@ -31,6 +32,8 @@ declare module "next-auth/jwt" {
     role: Role;
     email: string | null;
     name: string | null;
+    userAgent?: string;
+    id: string;
   }
 }
 
@@ -59,6 +62,7 @@ export const authOptions: AuthOptions = {
       name: "Credentials",
       credentials: {
         userId: { label: "User ID", type: "number" },
+        userAgent: { label: "User Agent", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.userId) {
@@ -69,11 +73,13 @@ export const authOptions: AuthOptions = {
           where: { id },
         });
         if (!user || !user.role) return null;
+        
         return {
           role: user.role,
           id: user.id.toString(),
           name: user.name || "",
           email: user.email || "",
+          userAgent: credentials.userAgent || undefined,
         };
       },
     }),
@@ -85,6 +91,7 @@ export const authOptions: AuthOptions = {
         token.role = user.role;
         token.email = user.email || null;
         token.name = user.name || null;
+        token.userAgent = user.userAgent;
       }
       return token;
     },
@@ -98,4 +105,18 @@ export const authOptions: AuthOptions = {
       return session;
     },
   },
+  events:{
+    signOut: async (event) => {
+      const admins: User[] = await prisma.user.findMany({
+        where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, active: "ACTIVE" },
+      });
+      await sendLogoutNotification(event.token, admins);
+    },
+    signIn: async ({ user }) => {
+      const admins: User[] = await prisma.user.findMany({
+        where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, active: "ACTIVE" },
+      });
+      await sendLoginNotification(user, admins);
+    },
+  }
 };
