@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { Role } from "@/utils/types";
+import { Role, User } from "@/utils/types";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthOptions, DefaultSession, DefaultUser } from "next-auth";
-import { prisma } from "@/clients";
+import { prisma, sendLoginNotification, sendLogoutNotification } from "@/clients";
 import { DefaultJWT } from "next-auth/jwt";
 export interface AuthenticatedUser {
   id: number;
@@ -98,4 +98,18 @@ export const authOptions: AuthOptions = {
       return session;
     },
   },
+  events:{
+    signOut: async (event) => {
+      const admins: User[] = await prisma.user.findMany({
+        where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, active: "ACTIVE" },
+      });
+      await sendLogoutNotification(event.token, admins);
+    },
+    signIn: async ({ user }) => {
+      const admins: User[] = await prisma.user.findMany({
+        where: { role: { in: ["ADMIN", "SUPER_ADMIN"] }, active: "ACTIVE" },
+      });
+      await sendLoginNotification(user, admins);
+    },
+  }
 };

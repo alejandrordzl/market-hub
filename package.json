@@ -13,6 +13,7 @@
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
+    "grammy": "^1.39.2",
     "jsonwebtoken": "^9.0.2",
     "next": "15.2.8",
     "next-auth": "^4.24.11",

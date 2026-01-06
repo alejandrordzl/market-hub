@@ -16,6 +16,7 @@ export type User = {
     createdAt: Date | null;
     updatedAt: Date | null;
     active: Status | null;
+    telegramId: string | null;
 };
 
 export type Product = {
