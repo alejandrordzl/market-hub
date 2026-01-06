@@ -19,8 +19,12 @@ export default function LoginPage() {
 
       if (!userId) return;
 
+      // Capture user agent
+      const userAgent = navigator.userAgent;
+
       const result = await signIn("credentials", {
         userId,
+        userAgent,
         redirect: false,
       });
 
