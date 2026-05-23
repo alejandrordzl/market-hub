@@ -6,8 +6,10 @@ export async function getProductByBarcode(
   bc: string
 ): Promise<Product | undefined> {
   const barCode = bc.trim().toLocaleLowerCase();
+  let cacheMiss = false;
   const cachedFn = unstable_cache(
     async (barCode: string) => {
+      cacheMiss = true;
       try {
         console.warn(`Fetching product with barcode ${barCode} from database`);
         const product = await prisma.product.findFirst({
@@ -31,14 +33,19 @@ export async function getProductByBarcode(
       tags: [`product-barcode-${barCode}`],
     }
   );
-  return cachedFn(barCode);
-
+  const result = await cachedFn(barCode);
+  console.warn(
+    `[cache ${cacheMiss ? "MISS" : "HIT"}] product-barcode-${barCode}`
+  );
+  return result;
 }
 export async function getProductById(
   productId: string
 ): Promise<Product | undefined> {
+  let cacheMiss = false;
   const cachedFn = unstable_cache(
     async (productId: string) => {
+      cacheMiss = true;
       try {
         console.warn(`Fetching product with ID ${productId} from database`);
         const product = await prisma.product.findUnique({
@@ -59,8 +66,11 @@ export async function getProductById(
       tags: [`product-id-${productId}`],
     }
   );
-  return cachedFn(productId);
-
+  const result = await cachedFn(productId);
+  console.warn(
+    `[cache ${cacheMiss ? "MISS" : "HIT"}] product-id-${productId}`
+  );
+  return result;
 }
 
 export async function getPaginatedProducts(page: number, pageSize: number): Promise<Product[]> {
